@@ -1,0 +1,6 @@
+SELECT ?rims WHERE {
+    ?rims rdf:type products:rims
+}
+ORDERby ?rims
+OFFSET 300
+LIMIT 100

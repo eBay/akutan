@@ -1,0 +1,7 @@
+SELECT ?rims
+WHERE { #find ?rims from products (this is a Sparql comment)
+    ?rims rdf:type products:rims
+# here the comment needs to be at the start of the line
+# and have a space. This is the legacy commenting behavior
+# while the WHERE clause uses the legacy format. 
+}

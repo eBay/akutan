@@ -1,0 +1,3 @@
+BOB ?bob WHERE {
+    ?bob ?bob ?bob
+}

@@ -1,0 +1,6 @@
+SELECT *
+WHERE {
+    ?postcard rdf:type   <product>
+    ?postcard <located>  ?place
+} ORDER BY ?place
+  LIMIT 4 OFFSET 1

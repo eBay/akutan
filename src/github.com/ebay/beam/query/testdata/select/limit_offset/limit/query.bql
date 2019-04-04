@@ -1,0 +1,5 @@
+SELECT *
+WHERE {
+    ?postcard rdf:type   <product>
+    ?postcard <located>  ?place
+} LIMIT 5

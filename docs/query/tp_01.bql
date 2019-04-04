@@ -1,0 +1,5 @@
+# who are the people who were born in USA ?
+SELECT * WHERE {
+    ?person <born> ?place
+    ?place <locatedIn> <USA>
+}

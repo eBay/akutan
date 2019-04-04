@@ -1,0 +1,3 @@
+ASK WHERE {
+    ?place <located>   <europe>
+}

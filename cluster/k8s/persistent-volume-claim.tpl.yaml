@@ -1,0 +1,21 @@
+{{- range $i, $v := .Volumes}}
+{{- if gt $i 0}}
+---
+{{- end}}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{$v.Claim}}
+  namespace: beam-dev
+  annotations:
+    volume.beta.kubernetes.io/storage-class: local-ssd
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  selector:
+    matchLabels:
+      type: {{$v.Name}}
+{{- end}}

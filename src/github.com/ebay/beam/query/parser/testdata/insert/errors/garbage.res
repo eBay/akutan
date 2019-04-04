@@ -1,0 +1,1 @@
+parser: error parsing as legacy query: unable to parse query: line 1 column 6: expected :

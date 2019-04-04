@@ -1,0 +1,1 @@
+parser: unexpected type *parser.Variable as predicate of fact 2

@@ -1,0 +1,6 @@
+SELECT
+   REDUCED (count(?rim) AS ?rims)
+WHERE {
+    ?rim rdf:type products:rims
+    ?rim <size> ?sz
+}

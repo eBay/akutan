@@ -1,0 +1,6 @@
+SELECT ?rims
+WHERE {
+    ?rims rdf:type products:rims
+}
+ORDER BY
+LIMIT 10

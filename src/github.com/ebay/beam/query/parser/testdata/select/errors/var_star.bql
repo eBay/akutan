@@ -1,0 +1,4 @@
+SELECT ?rims * 
+WHERE {
+    ?rims <color> "Red"
+}

@@ -1,0 +1,1 @@
+invalid query: can't mix aggregate and non-aggregate expressions. have (COUNT(?postcard) AS ?postcards) and ?size

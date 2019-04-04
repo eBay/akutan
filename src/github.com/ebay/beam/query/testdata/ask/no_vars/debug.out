@@ -1,0 +1,51 @@
+Started at: 1970-01-01 00:00:00.000000 UTC
+Parsing   0s
+Rewriting 0s
+Planning  0s
+Executing 0s
+Query Ended at: 1970-01-01 00:00:00.000000 UTC
+Total: 0s
+
+Query @ Index: 123456
+ASK WHERE {
+    <london>  <located>   <europe>
+}
+
+Parsed Query:
+ASK 
+WHERE {
+_ <london> <located> <europe>
+}
+
+Rewritten Query:
+ASK 
+WHERE {
+_ <london> <located> <europe>
+}
+
+Selected Plan:
+Ask ?result                                  costs local [disk: 0 seeks, 0 KiB] combined [disk: 5 seeks, 2 KiB] logicalProps: vars: ?result size: 1
+    InferSPO(_ <london> <located> <europe>)  costs local [disk: 5 seeks, 2 KiB] combined [disk: 5 seeks, 2 KiB] logicalProps: vars:  size: 5
+
+Statistics Used:
+BytesPerFact 100
+
+Query Execution Summary:
+Ask ?result                                  execs:   1 | totals: | input rows:   1 | out chunks:   1 | out factsets:     1 | took     0s
+    InferSPO(_ <london> <located> <europe>)  execs:   1 | totals: | input rows:   1 | out chunks:   1 | out factsets:     1 | took     0s
+
+Diskview Lookups:
+LookupSP
+	RPC Count:      2
+	Avg Lookups:    1.0
+	Avg Results:    1.0
+	Total RPC Time: 0s
+	Avg RPC time:   0s
+
+Plan Space:
+Group 2 [vars: ?result size: 1]
+	Ask ?result [1]                  costs local [disk: 0 seeks, 0 KiB] combined [disk: 5 seeks, 2 KiB] [best,selected]
+Group 1 [vars:  size: 5]
+	Infer(_ <london> <located> <europe>)       costs local ∞ combined ∞
+	InferSPO(_ <london> <located> <europe>)    costs local [disk: 5 seeks, 2 KiB] combined [disk: 5 seeks, 2 KiB] [best,selected]
+

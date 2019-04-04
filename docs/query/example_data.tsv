@@ -1,0 +1,30 @@
+<John_Scalzi>    rdfs:label  "John Scalzi"@en
+<John_Scalzi>    <born>      <Fairfield>
+<John_Scalzi>    <lives>     <Bradford>
+<William_Gibson> rdfs:label  "William Gibson"@en
+<William_Gibson> <born>      <Conway>
+<Neal_Stephenson>   rdfs:label  "Neal Stephenson"@en
+<Neal_Stephenson>   <born>      <Forte_Meade>
+
+<Fairfield>      <locatedIn> <California>
+<California>     <locatedIn> <USA>
+<Conway>         <locatedIn> <South_Carolina>
+<Forte_Meade>    <locatedIn> <Maryland>
+<Bradford>       <locatedIn> <Ohio>
+<Ohio>           <locatedIn> <USA>
+<South_Carolina> <locatedIn> <USA>
+<Maryland>       <locatedIn> <USA>
+
+<NU7100>         rdf:type       <TV>
+<NU7100>         <manufacturer> <Samsung>
+<NU7100>         <size>         40^^<inch>
+<QN65Q6FNAF>     rdf:type       <TV>
+<QN65Q6FNAF>     <manufacturer> <Samsung>
+<QN65Q6FNAF>     <size>         65^^<inch>
+<N5300>          rdf:type       <TV>
+<N5300>          <manufacturer> <Samsung>
+<N5300>          <size>         32^^<inch>
+
+?ukFact <UK> <memberOf> <EuropeanUnion>
+    ?ukFact <validFrom> '1973-01-01'
+    ?ukFact <validUntil> '2019-03-29 23:00:00'

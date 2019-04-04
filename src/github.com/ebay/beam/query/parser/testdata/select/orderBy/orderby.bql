@@ -1,0 +1,7 @@
+SELECT ?rims?sz
+WHERE {
+    ?rims rdf:type products:rims
+    ?rims <size> ?sz
+    ?rims <color> ?color
+}
+ORDER BY DESC(?sz) ?rims ASC(?color)

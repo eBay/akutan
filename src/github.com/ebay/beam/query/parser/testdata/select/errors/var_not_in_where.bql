@@ -1,0 +1,4 @@
+SELECT ?rim
+WHERE {
+    ?rims rdf:type products:rims
+}

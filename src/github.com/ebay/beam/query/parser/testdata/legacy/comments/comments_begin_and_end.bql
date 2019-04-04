@@ -1,0 +1,6 @@
+# show all products 
+# 1. for Samsung brand 
+# 2. with white color.
+?s <brand> <Samsung>
+?s <color> <white>
+# query end

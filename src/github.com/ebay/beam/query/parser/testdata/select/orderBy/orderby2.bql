@@ -1,0 +1,3 @@
+SELECT ?rims {
+    ?rims rdf:type products:rims
+} orderby ?rims

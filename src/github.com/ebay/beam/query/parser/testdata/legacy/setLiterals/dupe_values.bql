@@ -1,0 +1,3 @@
+?s <size> ?t
+?t <in> {  0.5  ,  1.0  ,  1.5, 1.0  }
+# the generated set should remove the duplicate entry for 1.0

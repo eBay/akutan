@@ -1,0 +1,50 @@
+{{- range $i, $dv := .DiskViews}}
+{{- if gt $i 0}}
+---
+{{- end}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{$dv.Name}}-config
+  namespace: beam-dev
+data:
+  config.json: |
+    {{json "    " $dv.Cfg }}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{$dv.Name}}
+  labels:
+    beam/app: {{$dv.Name}}
+    beam/type: beam-view
+  namespace: beam-dev
+  annotations:
+    beam/space: "{{$dv.Cfg.DiskView.Space}}"
+    beam/firstHash: "{{$dv.Cfg.DiskView.FirstHash}}"
+    beam/lastHash: "{{$dv.Cfg.DiskView.LastHash}}"
+spec:
+  containers:
+  - name: beam-diskview
+    image: {{$.Images.DiskView}}
+    args: [ "-cfg", "/etc/beam/config.json" ]
+    ports:
+    - containerPort: 9980
+      name: grpc
+    volumeMounts:
+    - name: data-volume
+      mountPath: /db
+    - name: config-volume
+      mountPath: /etc/beam
+  volumes:
+  - name: data-volume
+{{- if $.UsePersistentVolumes }}
+    persistentVolumeClaim:
+      claimName: {{$dv.Volume.Claim}}
+{{- else }}
+    emptyDir: {}
+{{- end }}
+  - name: config-volume
+    configMap:
+      name: {{$dv.Name}}-config
+{{- end}}

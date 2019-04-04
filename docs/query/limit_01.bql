@@ -1,0 +1,7 @@
+SELECT ?tv ?size WHERE {
+    ?tv rdf:type <TV>
+    ?tv <manufacturer> <Samsung>
+    ?tv <size> ?size
+}
+ORDER BY DESC(?size)
+LIMIT 1

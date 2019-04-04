@@ -1,0 +1,13 @@
+postcard        place
+# because of inference you'll get a row based on the fact, and rows based on inferred locations
+<postcard1>     <london>
+<postcard2>     <france>
+<postcard3>     <paris>
+<postcard4>     <larkspur>
+<postcard1>     <england>
+<postcard2>     <europe>
+<postcard3>     <france>
+<postcard4>     <california>
+<postcard1>     <europe>
+<postcard3>     <europe>
+<postcard4>     <usa>

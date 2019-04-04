@@ -1,0 +1,40 @@
+Started at: 1970-01-01 00:00:00.000000 UTC
+Parsing   0s
+Rewriting 0s
+Planning  0s
+Executing 0s
+Query Ended at: 1970-01-01 00:00:00.000000 UTC
+Total: 0s
+
+Query @ Index: 123456
+?postcard <color> "red"
+
+Parsed Query:
+_ ?postcard <color> "red"
+
+Rewritten Query:
+_ ?postcard <color> "red"
+
+Selected Plan:
+LookupPO(_ ?postcard <color> "red")  costs local [disk: 1 seeks, 0 KiB] combined [disk: 1 seeks, 0 KiB] logicalProps: vars: ?postcard size: 2
+
+Statistics Used:
+BytesPerFact                 100
+NumFactsPO P:<color> O:"red" 2
+
+Query Execution Summary:
+LookupPO(_ ?postcard <color> "red")  execs:   1 | totals: | input rows:   1 | out chunks:   1 | out factsets:     2 | took     0s
+
+Diskview Lookups:
+LookupPO
+	RPC Count:      1
+	Avg Lookups:    1.0
+	Avg Results:    2.0
+	Total RPC Time: 0s
+	Avg RPC time:   0s
+
+Plan Space:
+Group 1 [vars: ?postcard size: 2]
+	Lookup(_ ?postcard <color> "red")          costs local ∞ combined ∞
+	LookupPO(_ ?postcard <color> "red")        costs local [disk: 1 seeks, 0 KiB] combined [disk: 1 seeks, 0 KiB] [best,selected]
+

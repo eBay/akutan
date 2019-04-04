@@ -1,0 +1,3 @@
+?postcard rdf:type    <product>
+?postcard <located>   <europe>
+?postcard <size>?     ?sz

@@ -1,0 +1,5 @@
+SELECT ?rims WHERE {
+    ?rims rdf:type products:rims
+}
+LIMIT 10
+OFFSET 30

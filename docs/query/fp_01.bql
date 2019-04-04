@@ -1,0 +1,4 @@
+SELECT * WHERE {
+    ?person rdfs:label "John Scalzi"@en
+    ?person <born> ?place
+}

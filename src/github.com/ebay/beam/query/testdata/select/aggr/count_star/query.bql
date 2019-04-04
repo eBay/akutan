@@ -1,0 +1,5 @@
+SELECT (COUNT(*) as ?postcards)
+WHERE {
+    ?postcard rdf:type   <product>
+    ?postcard <located>  ?place
+}

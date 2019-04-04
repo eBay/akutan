@@ -1,0 +1,21 @@
+{{- range $i, $v := .Volumes}}
+{{- if gt $i 0}}
+---
+{{- end}}
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: {{$v.Name}}
+  namespace: beam-dev
+  annotations:
+    volume.beta.kubernetes.io/storage-class: local-ssd
+  labels:
+    type: {{$v.Name}}
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /mnt/beam/{{$v.Name}}
+{{- end}}

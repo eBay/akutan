@@ -1,0 +1,8 @@
+<postcard1>   rdf:type    <product>
+<postcard1>   <located>   <europe>
+
+<postcard2>   rdf:type    <product>
+<postcard2>   <located>   <europe>
+
+<postcard3>   rdf:type    <product>
+<postcard3>   <located>   <europe>

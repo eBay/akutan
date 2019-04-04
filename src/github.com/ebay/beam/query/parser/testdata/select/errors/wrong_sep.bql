@@ -1,0 +1,5 @@
+select ?rim, ?size
+where {
+    ?rim rdf:type products:rims
+    ?rim <size> ?size
+}

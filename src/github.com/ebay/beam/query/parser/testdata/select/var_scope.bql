@@ -1,0 +1,6 @@
+# this is a little nonsensical because you can't mix aggregate and non-aggregate
+# items, but the 2nd ?numRims is in scope as it comes from an earlier binding
+
+SELECT (COUNT(?rims) as ?numRims) ?numRims WHERE {
+    ?rim rdf:type products:rims
+}

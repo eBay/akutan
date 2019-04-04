@@ -1,0 +1,4 @@
+SELECT * (COUNT(?rims) AS ?rimCount) 
+WHERE {
+    ?rims <color> "Red"
+}

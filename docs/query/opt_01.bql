@@ -1,0 +1,5 @@
+SELECT ?person ?bornWhere ?livesWhere WHERE {
+    ?person <born> ?bornWhere
+    ?bornWhere <locatedIn> <USA>
+    ?person <lives>? ?livesWhere
+}

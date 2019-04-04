@@ -1,0 +1,6 @@
+SELECT ?postcard ?place
+WHERE {
+    ?postcard rdf:type   <product>
+    ?postcard <located>  ?place
+} OFFSET 8
+

@@ -1,0 +1,6 @@
+SELECT (COUNT(?postcard) AS ?postcards) 
+       ?size
+WHERE {
+    ?postcard rdf:type   <product>
+    ?postcard <width>?   ?size
+}

@@ -1,0 +1,1 @@
+parser: unexpected type *parser.LiteralInt as subject of fact 1

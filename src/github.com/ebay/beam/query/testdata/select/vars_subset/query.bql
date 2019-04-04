@@ -1,0 +1,5 @@
+SELECT ?place
+WHERE {
+    ?postcard rdf:type   <product>
+    ?postcard <located>  ?place
+}

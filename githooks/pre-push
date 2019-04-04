@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# Run sanity tests before pushing.
+
+runMakeCheck() {
+    check="$1"
+    printf "Running ${check}..."
+    output="$(make $check 2>&1)"
+    result=$?
+    if [ $result -eq 0 ]; then
+        printf "OK\n"
+    else
+        printf "Failed\nCommand output:\n%s\n\n" "$output"
+        printf "Run git push with --no-verify to skip this check.\n"
+        exit 1
+    fi
+}
+
+runMakeCheck "vet"
+runMakeCheck "test"

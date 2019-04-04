@@ -1,0 +1,4 @@
+SELECT (COUNT(*) as ?places) 
+WHERE {
+    ?place <located>   <europe>
+} LIMIT 5

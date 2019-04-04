@@ -1,0 +1,5 @@
+SELECT ?rims 
+WHERE {
+    ?rims rdf:type products:rims
+}
+ORDER BY ?rim

@@ -1,0 +1,4 @@
+SELECT DISTINCT (COUNT (*) AS ?postcards)
+WHERE {
+    ?postcard   rdf:type    <postcard>
+}

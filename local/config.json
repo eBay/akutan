@@ -1,0 +1,24 @@
+{
+	"beamLog": {
+		"type": "logspec",
+		"locator": {
+			"type": "static",
+			"addresses": ["localhost:20011"]
+		}
+	},
+	"tracing": {
+		"type": "jaeger",
+		"locator": {
+			"type": "static",
+			"addresses": ["localhost:14268"]
+		}
+	},
+	"api": {
+		"debugQuery": true
+	},
+	"diskView": {
+		"backend": "rocksdb",
+		"compression": "none",
+		"enableWipe": true
+	}
+}

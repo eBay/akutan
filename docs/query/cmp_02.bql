@@ -1,0 +1,7 @@
+ASK WHERE {
+    ?fact <UK> <memberOf> <EuropeanUnion>
+        ?fact <validUntil> ?until
+        ?fact <validFrom> ?from
+        ?until <gte> '2019-03-22'
+        ?from <lte> '2019-03-22'
+}

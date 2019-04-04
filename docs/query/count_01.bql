@@ -1,0 +1,4 @@
+SELECT (COUNT(?person) as ?num) WHERE {
+    ?person <born> ?place
+    ?place <locatedIn> <USA>
+}

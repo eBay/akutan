@@ -1,0 +1,17 @@
+<london>      <located>   <england>
+<england>     <located>   <europe>
+<paris>       <located>   <france>
+<france>      <located>   <europe>
+<larkspur>    <located>   <california>
+<california>  <located>   <usa>
+<postcard>    rdf:type    <product>
+<postcard1>   rdf:type    <postcard>
+<postcard1>   <located>   <london>
+<postcard2>   rdf:type    <postcard>
+<postcard2>   <located>   <france>
+<postcard3>   rdf:type    <postcard>
+<postcard3>   <located>   <paris>
+<postcard4>   rdf:type    <postcard>
+<postcard4>   <located>   <larkspur>
+<postcard1>   <width>      5^^<inch>
+<postcard3>   <width>      7^^<inch>

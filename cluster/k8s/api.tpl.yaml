@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    beam/app: beam-api
+    beam/type: beam-api
+  name: beam-api-http
+  namespace: beam-dev
+spec:
+  ports:
+  - port: 9988
+    name: http
+  selector:
+    beam/app: beam-api
+  type: LoadBalancer
+---
+# this normally wouldn't need to be split into 2 separate services
+# but minikube service doesn't know how to restict on a portName.
+# So we have two services, such that you can then do
+# minikube service -n beam-dev beam-api-http --url and get one
+# this is correct.
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    beam/app: beam-api
+    beam/type: beam-api
+  name: beam-api-grpc
+  namespace: beam-dev
+spec:
+  ports:
+  - port: 9987
+    name: grpc
+  selector:
+    beam/app: beam-api
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: beam-api-config
+  namespace: beam-dev
+data:
+  config.json: |
+    {{json "    " $.APICfg }}
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: beam-api
+  labels:
+    beam/app: beam-api
+    beam/type: beam-api
+  namespace: beam-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      beam/app: beam-api
+  template:
+    metadata:
+      name: beam-api
+      labels:
+        beam/app: beam-api
+        beam/type: beam-api
+    spec:
+      containers:
+      - name: beam-api
+        image: {{$.Images.API}}
+        args: [ "-cfg", "/etc/beam/config.json" ]
+        ports:
+        - containerPort: 9988
+          name: http
+        - containerPort: 9987
+          name: grpc
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/beam
+      volumes:
+        - name: config-volume
+          configMap:
+            name: beam-api-config

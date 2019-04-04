@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  labels:
+    beam/app: jaeger
+    beam/type: tracing
+  namespace: beam-dev
+spec:
+  ports:
+  - port: 80
+    targetPort: http
+    name: http
+  - port: 14268
+    targetPort: thriftcollector
+    name: thriftcollector
+  selector:
+    beam/app: jaeger
+  type: LoadBalancer
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: jaeger
+  labels:
+    beam/app: jaeger
+    beam/type: tracing
+  namespace: beam-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      beam/app: jaeger
+  template:
+    metadata:
+      name: jaeger
+      labels:
+        beam/app: jaeger
+        beam/type: tracing
+    spec:
+      containers:
+      - name: jaeger
+        image: {{$.Images.Jaeger}}
+        ports:
+        - containerPort: 16686
+          name: http
+        - containerPort: 14268
+          name: thriftcollector

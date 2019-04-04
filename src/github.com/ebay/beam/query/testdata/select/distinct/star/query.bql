@@ -1,0 +1,6 @@
+SELECT DISTINCT *
+WHERE {
+    ?postcard   rdf:type    <postcard>
+    ?postcard   <color>     ?color
+    ?postcard   <size>      ?size
+}

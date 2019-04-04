@@ -1,0 +1,6 @@
+SELECT
+    DISTINCT ?rim ?sz
+WHERE {
+    ?rim rdf:type products:rims
+    ?rim <size> ?sz
+}

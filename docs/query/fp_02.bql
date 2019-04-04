@@ -1,0 +1,4 @@
+SELECT * WHERE {
+    ?person <born> ?place
+    ?place <locatedIn> <California>
+}

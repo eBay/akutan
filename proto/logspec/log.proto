@@ -1,0 +1,332 @@
+// Copyright 2019 eBay Inc.
+// Primary authors: Simon Fell, Diego Ongaro,
+//                  Raymond Kroeker, and Sathish Kandasamy.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package logspec;
+
+service Log {
+	// Append opens a channel to add entries to the end of the log. The
+	// n-th AppendRequest is paired with the corresponding n-th
+	// AppendReply, which acknowledges the appends and informs the client
+	// of the log indexes.
+	//
+	// The same effects could be achieved with a non-streaming RPC.
+	// However, we think the streaming RPC will allow the server to more
+	// easily apply backpressure to the client.
+	rpc Append (stream AppendRequest) returns (stream AppendReply) {}
+
+	// Discard truncates the prefix of the log.
+	rpc Discard (DiscardRequest) returns (DiscardReply) {}
+
+	// Read gets a suffix of the log and follows/tails the end of the log.
+	// The client indicates at which index to begin. The server streams log
+	// entries to the client until reaching the end of the log, then
+	// streams more log entries as they become available.
+	rpc Read (ReadRequest) returns (stream ReadReply) {}
+
+	// Info requests log metadata.
+	rpc Info (InfoRequest) returns (InfoReply) {}
+
+	// InfoStream subscribes to updates to log metadata.
+	rpc InfoStream (InfoRequest) returns (stream InfoReply) {}
+}
+
+// An Entry is an atomic unit of the log.
+//
+// A log consists of Entries numbered consecutively from the log's first index
+// through and including the log's last index. A new log's first index starts
+// at 1 and its last index starts at 0. Append operations increase the log's
+// last index, and Discard operations can increase the log's first index.
+//
+// The log service itself may also write entries into the log that aren't
+// useful to clients. For example, Raft implementations may place membership
+// change entries into the log that clients should not see. These are real
+// entries with indexes, but clients are told to simply "skip" them.
+message Entry {
+	// Identifies the position in the log.
+	uint64 index = 1;
+	// If set, this entry does not contain any data, and 'data' will be
+	// unset. Such entries may be created by the log itself for the log's
+	// convenience. These special entries are still exposed to clients so
+	// that a client's position in the log is well-defined: a client can
+	// always reach the last index in the log if it reads fast enough.
+	bool skip = 2;
+	// If 'skip' is unset/false, this contains the opaque data that was
+	// initially provided in an AppendRequest proposal.
+	bytes data = 3;
+}
+
+
+message AppendRequest {
+	// The client MUST set this to 1 for the first request on the stream
+	// and increment it by 1 with each subsequent request on the stream.
+	// The stream of requests and replies MUST be fully ordered; this is
+	// redundant information that is only used as a consistency check.
+	uint64 sequence = 1;
+
+	// An unordered set of data items to be added as new entries at the end
+	// of log. Each proposal may be up to several megabytes in size.
+	//
+	// The client MAY send no proposals as a way to test the connection;
+	// the server MUST reply with an AppendReply containing no indexes.
+	//
+	// Because the client sends a stream of AppendRequests, it must decide
+	// how many proposals to include in each individual AppendRequest. The
+	// client SHOULD include many proposals (up to thousands or several
+	// megabytes) in an individual request if available, but it SHOULD NOT
+	// artificially delay sending the AppendRequest in hopes of collecting
+	// more proposals.
+	repeated bytes proposals = 2;
+}
+
+message AppendReply {
+	message OK {
+		// The server MUST send the exact same number as in the
+		// request. Therefore, it MUST be set to 1 for the first reply
+		// on the stream and, subsequently, 1 greater than the sequence
+		// number of the previous AppendReply on the stream. This is
+		// only used to confirm that the client and server haven't
+		// somehow gotten out of sync.
+		uint64 sequence = 1;
+
+		// For each proposal in the corresponding AppendRequest, the
+		// index of a new log entry containing that data. Foreseeable
+		// server implementations SHOULD return consecutive indexes
+		// almost all the time. The server MAY assign the proposals
+		// non-consecutive log indexes (such as 4, 5, 7) and it MAY
+		// assign non-increasing log indexes (such as 7, 5, 4).
+		// However, the server MUST NOT return log indexes that leave
+		// an unfilled gap in the log (it must be possible to read all
+		// the entries from the log without waiting for gaps to be
+		// filled).
+		repeated uint64 indexes = 2;
+	}
+
+	oneof Reply {
+		// If set, the operation completed successfully, meaning the
+		// proposed data has been stored in the log at the returned
+		// indexes, where it is guaranteed to remain forever (or until
+		// Discard is called). Servers MUST persist and/or replicate
+		// the entries sufficiently (as defined by their SLA) before
+		// returning 'ok'. If not set, the operation may not have
+		// completed. One of the fields below may explain why.
+		//
+		// If a client sees that 'ok' is unset but does not see any
+		// fields below explaining why, it's likely that a new version
+		// of the protocol added more error cases that the client is
+		// unaware of. In this case, a client MUST close this stream
+		// and disconnect from this server. Before continuing, it MUST
+		// wait some time (100 ms or more), then it SHOULD issue a
+		// probe AppendRequest with no proposals on a new connection.
+		OK ok = 1;
+
+		// If set, the client SHOULD immediately re-issue the request
+		// to another server, as suggested in the 'redirect' field. The
+		// client MAY keep this connection open for other request
+		// types. The client and server SHOULD close this stream. The
+		// server MUST NOT set the 'ok' field in the reply and MUST NOT
+		// send any further replies on this stream; the client MUST
+		// ignore the 'ok' field and any further replies on this
+		// stream.
+		Redirect redirect = 2;
+
+		// If set, the server has exhausted its capacity and cannot
+		// append the proposed entries. The client SHOULD wait and/or
+		// issue a Discard request to free space.
+		//
+		// The client and server SHOULD close this stream. The server
+		// MUST NOT set the 'ok' field in the reply and MUST NOT send
+		// any further replies on this stream; the client MUST ignore
+		// the 'ok' field and any further replies on this stream.
+		//
+		// The client SHOULD wait (100 ms or more) to reissue the
+		// request. After waiting, it SHOULD first issue a probe
+		// AppendRequest with no proposals on a new stream to test
+		// whether available capacity exists.
+		bool full = 3;
+	}
+}
+
+message DiscardRequest {
+	// At any point after receiving this request, any server MAY delete any
+	// entries with index strictly smaller than this one (growing the log's
+	// first index to any value up through and including the request's
+	// index). Shortly after this server acknowledges this request, the log
+	// MUST NOT run out of capacity due to the space usage of log entries 1
+	// up to and excluding firstIndex.
+	//
+	// [This extra "fast-forward" feature would be useful for transitioning
+	// a live cluster with significant history from one log to another.] If
+	// the request's index is greater than the log's last index, the server
+	// MUST logically extend the log up to and excluding firstIndex with
+	// entries marked "skip", before applying the Discard operation. Note
+	// that a server can satisfy this requirement by deleting the log's
+	// entire contents, setting the log's first index to the one given in
+	// the request, and setting the log's last index to this index minus 1.
+	uint64 firstIndex = 1;
+}
+
+message DiscardReply {
+	message OK {
+		// Empty.
+	}
+
+	oneof Reply {
+		// If set, the operation completed successfully. If not set,
+		// the operation may not have completed. One of the fields
+		// below may explain why.
+		//
+		// If a client sees that 'ok' is unset but does not see any
+		// fields below explaining why, it's likely that a new version
+		// of the protocol added more error cases that the client is
+		// unaware of. In this case, a client MUST disconnect from this
+		// server. Before continuing, it MUST wait some time (100 ms or
+		// more), then it SHOULD re-issue its DiscardRequest on a new
+		// connection.
+		OK ok = 1;
+
+		// If set, the client SHOULD immediately re-issue the request
+		// to another server, as suggested in the 'redirect' field. The
+		// client MAY keep this connection open for other request
+		// types. The server MUST NOT set the 'ok' field in the reply;
+		// the client MUST ignore the 'ok' field.
+		Redirect redirect = 2;
+	}
+}
+
+message ReadRequest {
+	// Identifies the first log entry to be returned.
+	uint64 nextIndex = 1;
+}
+
+message ReadReply {
+	message OK {
+		// A list of consecutive log entries (up to thousands or
+		// several megabytes). The server SHOULD send more than one
+		// entry if available but SHOULD NOT artificially delay sending
+		// the ReadReply in hopes of accumulating more entries. If
+		// there are no entries available to send, the server MAY send
+		// no entries as a way to test the connection.
+		//
+		// Each entry contains the log index. This is redundant
+		// information but is useful to detect horrible bugs. If this
+		// is the first Read reply, entries[0].index must equal the
+		// request's nextIndex. Subsequently, entries[0].index must be
+		// 1 greater than the previous reply's last entry's index.
+		repeated Entry entries = 1;
+	}
+
+	oneof Reply {
+		// If set, the query completed successfully. If not set, the
+		// query may not have completed. One of the fields below may
+		// explain why.
+		//
+		// If a client sees that 'ok' is unset but does not see any
+		// fields below explaining why, it's likely that a new version
+		// of the protocol added more error cases that the client is
+		// unaware of. In this case, a client MUST close this stream
+		// and disconnect from this server. Before continuing, it MUST
+		// wait some time (100 ms or more), then it SHOULD re-issue a
+		// ReadRequest on a new connection.
+		OK ok = 1;
+
+		// If set, the client SHOULD immediately re-issue the request
+		// to another server, as suggested in the 'redirect' field. The
+		// client MAY keep this connection open for other request
+		// types. The server MUST NOT set the 'ok' field in the reply;
+		// the client MUST ignore the 'ok' field. The client and server
+		// SHOULD close this stream.
+		Redirect redirect = 2;
+
+		// If set, the next index has already been discarded from the
+		// log. The server MUST NOT set the 'ok' field in the reply;
+		// the client MUST ignore the 'ok' field. The client and server
+		// SHOULD close this stream. The client SHOULD NOT re-issue the
+		// request to another server, as it's likely to get the same
+		// response.
+		bool truncated = 3;
+	}
+
+}
+
+message InfoRequest {
+	// Controls whether lastIndex must be current (linearizable).
+	bool allowStale = 1;
+}
+
+message InfoReply {
+	message OK {
+		// The first entry that can be read from the log. For a new
+		// log, this should be 1 (until Discard is called for the first
+		// time).
+		uint64 firstIndex = 1;
+		// If 'allowStale' is false, this is the largest index ever
+		// assigned by any Append. If 'allowStale' is true, this may
+		// fall slightly behind; the server SHOULD set this to the
+		// largest index it knows about in the log without incurring
+		// extra network communication. If the log contains no entries,
+		// this MUST be set to firstIndex - 1.
+		uint64 lastIndex = 2;
+		// Approximately how many bytes of space the current log
+		// occupies, subtracting the storage cost of any entries that
+		// have been Discarded. A client MAY use this and bytesTotal to
+		// influence Discard decisions. A server SHOULD already track
+		// this and bytesTotal for the purpose of not filling its disk.
+		uint64 bytesUsed = 3;
+		// Approximately how many bytes of space the current log could
+		// occupy before running out.
+		uint64 bytesTotal = 4;
+	}
+
+	oneof Reply {
+		// If set, the query completed successfully. If not set, one of
+		// the fields below may explain why.
+		//
+		// If a client sees that 'ok' is unset but does not see any
+		// fields below explaining why, it's likely that a new version
+		// of the protocol added more error cases that the client is
+		// unaware of. In this case, a client MUST close this stream
+		// and disconnect from this server. Before continuing, it MUST
+		// wait some time (100 ms or more), then it SHOULD re-issue an
+		// InfoRequest on a new connection.
+		OK ok = 1;
+
+		// If set, the client SHOULD immediately re-issue the request
+		// to another server, as suggested in the 'redirect' field. The
+		// client MAY keep this connection open for other request
+		// types. The server MUST NOT set the 'ok' field in the reply;
+		// the client MUST ignore the 'ok' field.
+		Redirect redirect = 2;
+	}
+}
+
+// A Redirect tells the client to use another server. Servers MAY send a
+// Redirect reply in a variety of cases, for example:
+//  1. A server that cannot respond in a timely manner SHOULD redirect requests
+//     elsewhere.
+//  2. A non-primary server MAY redirect a request to a primary server if only
+//     the primary can service that request or if the primary can service it
+//     more efficiently. (It MAY instead proxy the request to the primary.)
+//  3. An overloaded server MAY redirect requests elsewhere.
+//  4. A primary server MAY redirect requests elsewhere that it need not be
+//     involved in (such as reads for the beginning of the log).
+message Redirect {
+	// If non-empty, this suggests to the client which server to try
+	// instead. If empty, the client SHOULD use its service discovery
+	// mechanism to find servers and SHOULD NOT reconnect immediately to
+	// this server.
+	string host = 1;
+}

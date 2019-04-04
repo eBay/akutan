@@ -1,0 +1,5 @@
+SELECT ?place ?postcard
+WHERE {
+    ?postcard rdf:type   <product>
+    ?postcard <located>  ?place
+} ORDER BY ?place DESC(?postcard)

@@ -1,0 +1,4 @@
+ASK ?rims
+WHERE {
+	?rims <color> "white"
+}

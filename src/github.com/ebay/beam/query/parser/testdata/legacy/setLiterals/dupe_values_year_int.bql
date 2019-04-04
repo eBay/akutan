@@ -1,0 +1,4 @@
+?s <size> ?t
+?t <in> {  1990, 2018, '2018' }
+# 2018 is an int and '2018' is a year. They shouldn't be considered
+# duplicates or the same type.

@@ -1,0 +1,6 @@
+SELECT
+    REDUCED ?rim
+WHERE {
+    ?rim rdf:type products:rims
+    ?rim <size> ?sz
+}

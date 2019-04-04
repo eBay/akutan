@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kafka-log-1
+  labels:
+    beam/app: kafka-log-1
+    beam/type: kafka
+  namespace: beam-dev
+spec:
+  containers:
+  - name: kafka-log-1
+    image: {{$.Images.LogService}}
+    ports:
+    - containerPort: 2181
+      name: zookeeper
+    - containerPort: 9092
+      name: kafka
+    volumeMounts:
+    - name: kafka-log-1
+      mountPath: /log
+  volumes:
+  - name: kafka-log-1
+{{- if $.UsePersistentVolumes }}
+    persistentVolumeClaim:
+      claimName: log-store-1
+{{- else }}
+    emptyDir: {}
+{{- end }}

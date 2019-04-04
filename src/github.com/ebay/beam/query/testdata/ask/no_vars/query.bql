@@ -1,0 +1,3 @@
+ASK WHERE {
+    <london>  <located>   <europe>
+}

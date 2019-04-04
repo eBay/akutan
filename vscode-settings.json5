@@ -1,0 +1,169 @@
+{
+    // These are recommended configuration settings for VS Code. You might want to
+    // make these your workspace settings and leave local changes in user settings,
+    // or you can just copy-paste from here. VS Code workspace settings go into
+    // .vscode/settings.json.
+    //
+    // Note that VS Code permits comments and trailing commas in its JSON,
+    // which they call "JSON with comments" or "jsonc". This file has a .json5
+    // extension to render well on GitHub.
+
+    ////////// General //////////
+
+    "files.associations": {
+        // Interpret this very file as JSON with Comments.
+        "vscode-settings.json5": "jsonc",
+        // Interpret .template files as Go. We run these through a tool called genny.
+        "*.template": "go",
+    },
+
+    // Add a newline at the end of all files.
+    "files.insertFinalNewline": true,
+
+    // Don't look through these big directories when finding files: it's not our
+    // code anyhow.
+    "files.exclude": {
+        "vendor": true,
+    },
+
+    // Show some non-printable characters.
+    "editor.renderWhitespace": "boundary",
+
+    ////////// Go //////////
+
+    // See test names and log output.
+    "go.testFlags": ["-v"],
+
+    // Tests commonly fail by running forever. You probably don't want to wait the
+    // default 30s.
+    "go.testTimeout": "5s",
+
+    // See test coverage when you run a single test. This helps you see what the
+    // test does.
+    "go.coverOnSingleTest": true,
+
+    // Run tools when you save to get faster feedback.
+    "go.lintOnSave": "package",
+    "go.vetOnSave": "package",
+
+    ////////// Spell checker //////////
+
+    // Map spelling errors to Hints so that they don't show up in the Problems pane.
+    "cSpell.diagnosticLevel": "Hint",
+
+    // Make hints more visible in the main editor pane.
+    "workbench.colorCustomizations": {
+        "editorHint.border": "#aa0",
+        "editorHint.foreground": "#ffffff00",
+    },
+
+    // This makes the spell checker more lenient when two words are jammed together.
+    "cSpell.allowCompoundWords": true,
+
+    // This is the default list of filetypes to spell check except with proto3 added.
+    "cSpell.enabledLanguageIds": [
+        "asciidoc",
+        "c",
+        "cpp",
+        "csharp",
+        "css",
+        "go",
+        "handlebars",
+        "html",
+        "jade",
+        "javascript",
+        "javascriptreact",
+        "json",
+        "latex",
+        "less",
+        "markdown",
+        "php",
+        "plaintext",
+        "python",
+        "pub",
+        "restructuredtext",
+        "rust",
+        "scss",
+        "text",
+        "typescript",
+        "typescriptreact",
+        "yml",
+        "proto3",
+    ],
+
+    // This is a whitelist of words that we think we spell just fine.
+    "cSpell.words": [
+        "Enumerate's",
+        "beamql",
+        "btree",
+        "cfg",
+        "cmds",
+        "cncf",
+        "cpus",
+        "debugf",
+        "deps",
+        "diskview",
+        "ebay",
+        "errored",
+        "gogoproto",
+        "goparsify",
+        "goroutine",
+        "goroutines",
+        "grafana",
+        "grafana's",
+        "grpc",
+        "infof",
+        "jaeger",
+        "kgobject",
+        "kube",
+        "kubeconfig",
+        "kubectl",
+        "kubernetes",
+        "log",
+        "logrus",
+        "minikube",
+        "oids",
+        "oneof",
+        "parserish",
+        "parsify",
+        "pmap",
+        "proto",
+        "protobuf",
+        "qexec",
+        "rcrowley",
+        "rdfs",
+        "recvd",
+        "repo",
+        "rsync",
+        "sparql",
+        "stretchr",
+        "structs",
+        "systemd",
+        "timeout",
+        "tsdb",
+        "tx",
+        "txns",
+        "txview",
+        "uint",
+        "unbatched",
+        "unbuffered",
+        "unexported",
+        "unparsed",
+        "unregister",
+        "upsert",
+        "vektah",
+        "virtualbox",
+        "warnf"
+    ],
+
+    // This is a blacklist of words that are incorrect but cspell would not
+    // otherwise flag.
+    "cSpell.flagWords": [
+        "comparision",
+        "gathes",
+        "leafs",
+        "messure",
+        "promethues",
+        "tripple"
+    ]
+}

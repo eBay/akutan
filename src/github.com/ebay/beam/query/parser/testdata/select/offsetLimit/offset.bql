@@ -1,0 +1,4 @@
+SELECT ?rims WHERE {
+    ?rims rdf:type products:rims
+}
+OFFSET 42

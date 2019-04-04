@@ -1,0 +1,4 @@
+ASK WHERE {
+    ?person <born> ?place
+    ?place <locatedIn> <Maryland>
+}

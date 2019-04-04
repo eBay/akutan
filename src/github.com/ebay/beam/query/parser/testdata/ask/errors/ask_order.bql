@@ -1,0 +1,5 @@
+ASK 
+WHERE {
+	?rims <color> "white"
+}
+ORDER BY ?rims

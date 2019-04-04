@@ -1,0 +1,40 @@
+{
+	"beamlog": {
+		"type": "kafka",
+		"locator": {
+			"type": "kube",
+			"portName": "kafka",
+			"labelSelector": "beam/type=kafka"
+		}
+	},
+	"tracing": {
+		"type": "jaeger",
+		"locator": {
+			"type": "kube",
+			"portName": "thriftcollector",
+			"labelSelector": "beam/app=jaeger"
+		}
+	},
+	"viewsLocator": {
+		"type": "kube",
+		"portName": "grpc",
+		"labelSelector": "beam/type=beam-view"
+	},
+	"api": {
+		"grpcAddress": ":9987",
+		"httpAddress": ":9988",
+		"debugQuery": true
+	},
+	"txTimeoutView": {
+		"grpcAddress": ":9980",
+		"metricsAddress": ":9981"
+	},
+	"diskView": {
+		"grpcAddress": ":9980",
+		"metricsAddress": ":9981",
+		"backend": "rocksdb",
+		"dir": "/db",
+		"compression": "none",
+		"enableWipe": true
+	}
+}

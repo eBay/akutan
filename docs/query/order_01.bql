@@ -1,0 +1,7 @@
+# list Samsung TV's by size.
+SELECT ?tv ?size WHERE {
+    ?tv rdf:type <TV>
+    ?tv <manufacturer> <Samsung>
+    ?tv <size> ?size
+}
+ORDER BY DESC(?size)

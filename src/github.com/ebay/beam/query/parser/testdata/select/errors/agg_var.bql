@@ -1,0 +1,5 @@
+SELECT (COUNT(?rims) AS ?rimCount) ?brand
+WHERE {
+    ?rims <color> "Red"
+    ?rims <brand> ?brand
+}

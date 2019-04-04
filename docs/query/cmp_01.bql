@@ -1,0 +1,6 @@
+SELECT * WHERE {
+    ?tv rdf:type <TV>
+    ?tv <manufacturer> <Samsung>
+    ?tv <size> ?size
+    ?size <gt> 36^^<inch>
+}

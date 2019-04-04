@@ -1,0 +1,2 @@
+?s rdf:type ?t
+?t <in> {products:tires}

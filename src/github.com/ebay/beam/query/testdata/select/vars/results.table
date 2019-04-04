@@ -1,0 +1,13 @@
+place           postcard        size
+
+<london>        <postcard1>     8.5^^<inches>
+<france>        <postcard2>     5.0^^<inches>
+<paris>         <postcard3>     7.25^^<inches>
+<larkspur>      <postcard4>     4.75^^rdf:centimeter
+<england>       <postcard1>     8.5^^<inches>
+<europe>        <postcard2>     5.0^^<inches>
+<france>        <postcard3>     7.25^^<inches>
+<california>    <postcard4>     4.75^^rdf:centimeter
+<europe>        <postcard1>     8.5^^<inches>
+<europe>        <postcard3>     7.25^^<inches>
+<usa>           <postcard4>     4.75^^rdf:centimeter

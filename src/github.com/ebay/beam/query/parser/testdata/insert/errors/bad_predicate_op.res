@@ -1,0 +1,1 @@
+parser: unexpected type *parser.Operator as predicate of fact 1

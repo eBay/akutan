@@ -1,0 +1,70 @@
+Started at: 1970-01-01 00:00:00.000000 UTC
+Parsing   0s
+Rewriting 0s
+Planning  0s
+Executing 0s
+Query Ended at: 1970-01-01 00:00:00.000000 UTC
+Total: 0s
+
+Query @ Index: 123456
+SELECT ?place
+WHERE {
+    ?place <located> <europe>
+    ?place <notEqual> <london>
+}
+
+Parsed Query:
+SELECT ?place
+WHERE {
+_ ?place <located> <europe>
+_ ?place != <london>
+}
+
+Rewritten Query:
+SELECT ?place
+WHERE {
+_ ?place <located> <europe>
+_ ?place != <london>
+}
+
+Selected Plan:
+ExternalIDs                                       costs local [disk: 0 seeks, 0 KiB] combined [disk: 5 seeks, 0 KiB] logicalProps: vars: ?place size: 5
+    Project ?place                                costs local [disk: 0 seeks, 0 KiB] combined [disk: 5 seeks, 0 KiB] logicalProps: vars: ?place size: 5
+        SelectLit ?place != #1001                 costs local [disk: 0 seeks, 0 KiB] combined [disk: 5 seeks, 0 KiB] logicalProps: vars: ?place size: 5
+            InferPO(_ ?place <located> <europe>)  costs local [disk: 5 seeks, 0 KiB] combined [disk: 5 seeks, 0 KiB] logicalProps: vars: ?place size: 10
+
+Statistics Used:
+BytesPerFact                      100
+NumFactsPO P:<located> O:<europe> 2
+
+Query Execution Summary:
+ExternalIDs                                       execs:   1 | totals: | input rows:   1 | out chunks:   1 | out factsets:     3 | took     0s
+    Project ?place                                execs:   1 | totals: | input rows:   1 | out chunks:   1 | out factsets:     3 | took     0s
+        SelectLit ?place != #1001                 execs:   1 | totals: | input rows:   1 | out chunks:   1 | out factsets:     3 | took     0s
+            InferPO(_ ?place <located> <europe>)  execs:   1 | totals: | input rows:   1 | out chunks:   1 | out factsets:     4 | took     0s
+
+Diskview Lookups:
+LookupSP
+	RPC Count:      1
+	Avg Lookups:    3.0
+	Avg Results:    3.0
+	Total RPC Time: 0s
+	Avg RPC time:   0s
+LookupPO
+	RPC Count:      3
+	Avg Lookups:    1.7
+	Avg Results:    1.3
+	Total RPC Time: 0s
+	Avg RPC time:   0s
+
+Plan Space:
+Group 4 [vars: ?place size: 5]
+	ExternalIDs [3]                  costs local [disk: 0 seeks, 0 KiB] combined [disk: 5 seeks, 0 KiB] [best,selected]
+Group 3 [vars: ?place size: 5]
+	Project ?place [2]               costs local [disk: 0 seeks, 0 KiB] combined [disk: 5 seeks, 0 KiB] [best,selected]
+Group 2 [vars: ?place size: 5]
+	SelectLit ?place != #1001 [1]    costs local [disk: 0 seeks, 0 KiB] combined [disk: 5 seeks, 0 KiB] [best,selected]
+Group 1 [vars: ?place size: 10]
+	Infer(_ ?place <located> <europe>)         costs local ∞ combined ∞
+	InferPO(_ ?place <located> <europe>)       costs local [disk: 5 seeks, 0 KiB] combined [disk: 5 seeks, 0 KiB] [best,selected]
+

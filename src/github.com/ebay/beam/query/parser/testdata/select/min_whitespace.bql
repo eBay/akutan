@@ -1,0 +1,3 @@
+select?rims?wheels{
+?rims ?wheels "Wheels"
+}orderby?rims LIMIT10OFFSET20

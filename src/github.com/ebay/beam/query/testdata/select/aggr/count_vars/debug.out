@@ -1,0 +1,77 @@
+Started at: 1970-01-01 00:00:00.000000 UTC
+Parsing   0s
+Rewriting 0s
+Planning  0s
+Executing 0s
+Query Ended at: 1970-01-01 00:00:00.000000 UTC
+Total: 0s
+
+Query @ Index: 123456
+SELECT (COUNT(?postcard) AS ?postcards) 
+       (count(?size) as ?withSize)
+WHERE {
+    ?postcard rdf:type   <product>
+    ?postcard <width>?   ?size
+}
+
+Parsed Query:
+SELECT (COUNT(?postcard) AS ?postcards) (COUNT(?size) AS ?withSize)
+WHERE {
+_ ?postcard rdf:type <product>
+_ ?postcard <width>? ?size
+}
+
+Rewritten Query:
+SELECT (COUNT(?postcard) AS ?postcards) (COUNT(?size) AS ?withSize)
+WHERE {
+_ ?postcard rdf:type <product>
+_ ?postcard <width>? ?size
+}
+
+Selected Plan:
+ExternalIDs                                                               costs local [disk: 0 seeks, 0 KiB] combined [disk: 30 seeks, 2 KiB] logicalProps: vars: ?postcards ?withSize size: 1
+    Project (COUNT(?postcard) AS ?postcards) (COUNT(?size) AS ?withSize)  costs local [disk: 0 seeks, 0 KiB] combined [disk: 30 seeks, 2 KiB] logicalProps: vars: ?postcards ?withSize size: 1
+        LoopJoin (left) ?postcard                                         costs local [disk: 0 seeks, 0 KiB] combined [disk: 30 seeks, 2 KiB] logicalProps: vars: ?postcard ?size size: 5
+            InferPO(_ ?postcard rdf:type <product>)                       costs local [disk: 5 seeks, 0 KiB] combined [disk: 5 seeks, 0 KiB] logicalProps: vars: ?postcard size: 5
+            InferSP(_ $postcard <width> ?size)                            costs local [disk: 5 seeks, 0 KiB] combined [disk: 5 seeks, 0 KiB] logicalProps: vars: ?postcard ?size size: 5
+
+Statistics Used:
+BytesPerFact                      100
+NumFactsPO P:rdf:type O:<product> 1
+NumFactsSP S:#0 P:<width>         1
+
+Query Execution Summary:
+ExternalIDs                                                               execs:   1 | totals: | input rows:   1 | out chunks:   1 | out factsets:     1 | took     0s
+    Project (COUNT(?postcard) AS ?postcards) (COUNT(?size) AS ?withSize)  execs:   1 | totals: | input rows:   1 | out chunks:   1 | out factsets:     1 | took     0s
+        LoopJoin (left) ?postcard                                         execs:   1 | totals: | input rows:   1 | out chunks:   1 | out factsets:     5 | took     0s
+            InferPO(_ ?postcard rdf:type <product>)                       execs:   1 | totals: | input rows:   1 | out chunks:   1 | out factsets:     5 | took     0s
+            InferSP(_ $postcard <width> ?size)                            execs:   1 | totals: | input rows:   5 | out chunks:   1 | out factsets:     2 | took     0s
+
+Diskview Lookups:
+LookupSP
+	RPC Count:      1
+	Avg Lookups:    5.0
+	Avg Results:    2.0
+	Total RPC Time: 0s
+	Avg RPC time:   0s
+LookupPO
+	RPC Count:      3
+	Avg Lookups:    2.0
+	Avg Results:    1.7
+	Total RPC Time: 0s
+	Avg RPC time:   0s
+
+Plan Space:
+Group 5 [vars: ?postcards ?withSize size: 1]
+	ExternalIDs [4]                  costs local [disk: 0 seeks, 0 KiB] combined [disk: 30 seeks, 2 KiB] [best,selected]
+Group 4 [vars: ?postcards ?withSize size: 1]
+	Project (COUNT(?postcard) AS ?postcards) (COUNT(?size) AS ?withSize) [3]           costs local [disk: 0 seeks, 0 KiB] combined [disk: 30 seeks, 2 KiB] [best,selected]
+Group 3 [vars: ?postcard ?size size: 5]
+	LoopJoin (left) ?postcard [1 2]            costs local [disk: 0 seeks, 0 KiB] combined [disk: 30 seeks, 2 KiB] [best,selected]
+Group 2 [vars: ?postcard ?size size: 5]
+	Infer(_ $postcard <width> ?size)           costs local ∞ combined ∞
+	InferSP(_ $postcard <width> ?size)         costs local [disk: 5 seeks, 0 KiB] combined [disk: 5 seeks, 0 KiB] [best,selected]
+Group 1 [vars: ?postcard size: 5]
+	Infer(_ ?postcard rdf:type <product>)      costs local ∞ combined ∞
+	InferPO(_ ?postcard rdf:type <product>)    costs local [disk: 5 seeks, 0 KiB] combined [disk: 5 seeks, 0 KiB] [best,selected]
+

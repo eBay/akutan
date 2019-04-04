@@ -1,0 +1,5 @@
+SELECT ?place
+WHERE {
+    ?place <located> <europe>
+    ?place <notEqual> <london>
+}

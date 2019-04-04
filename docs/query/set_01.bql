@@ -1,0 +1,5 @@
+SELECT ?person WHERE {
+    ?person <born> ?place
+    ?place <locatedIn> ?where
+    ?where <in> { <Maryland> , <South_Carolina> }
+}

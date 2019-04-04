@@ -1,0 +1,93 @@
+Started at: 1970-01-01 00:00:00.000000 UTC
+Parsing   0s
+Rewriting 0s
+Planning  0s
+Executing 0s
+Query Ended at: 1970-01-01 00:00:00.000000 UTC
+Total: 0s
+
+Query @ Index: 123456
+SELECT ?place ?postcard
+WHERE {
+    ?postcard rdf:type   <product>
+    ?postcard <located>  ?place
+} ORDER BY ?place DESC(?postcard)
+
+Parsed Query:
+SELECT ?place ?postcard
+WHERE {
+_ ?postcard rdf:type <product>
+_ ?postcard <located> ?place
+}
+ORDER BY ASC(?place) DESC(?postcard)
+
+Rewritten Query:
+SELECT ?place ?postcard
+WHERE {
+_ ?postcard rdf:type <product>
+_ ?postcard <located> ?place
+}
+ORDER BY ASC(?place) DESC(?postcard)
+
+Selected Plan:
+Project ?place ?postcard                                 costs local [disk: 0 seeks, 0 KiB] combined [disk: 30 seeks, 2 KiB] logicalProps: vars: ?place ?postcard size: 2
+    OrderBy ASC(?place) DESC(?postcard)                  costs local [disk: 0 seeks, 0 KiB] combined [disk: 30 seeks, 2 KiB] logicalProps: vars: ?place ?postcard size: 2
+        ExternalIDs                                      costs local [disk: 0 seeks, 0 KiB] combined [disk: 30 seeks, 2 KiB] logicalProps: vars: ?place ?postcard size: 2
+            LoopJoin (inner) ?postcard                   costs local [disk: 0 seeks, 0 KiB] combined [disk: 30 seeks, 2 KiB] logicalProps: vars: ?place ?postcard size: 2
+                InferPO(_ ?postcard rdf:type <product>)  costs local [disk: 5 seeks, 0 KiB] combined [disk: 5 seeks, 0 KiB] logicalProps: vars: ?postcard size: 5
+                InferSP(_ $postcard <located> ?place)    costs local [disk: 5 seeks, 0 KiB] combined [disk: 5 seeks, 0 KiB] logicalProps: vars: ?place ?postcard size: 5
+
+Statistics Used:
+BytesPerFact                      100
+NumFactsP P:<located>             10
+NumFactsPO P:rdf:type O:<product> 1
+NumFactsSP S:#0 P:<located>       1
+
+Query Execution Summary:
+Project ?place ?postcard                                 execs:   1 | totals: | input rows:   1 | out chunks:   1 | out factsets:    11 | took     0s
+    OrderBy ASC(?place) DESC(?postcard)                  execs:   1 | totals: | input rows:   1 | out chunks:   1 | out factsets:    11 | took     0s
+        ExternalIDs                                      execs:   1 | totals: | input rows:   1 | out chunks:   1 | out factsets:    11 | took     0s
+            LoopJoin (inner) ?postcard                   execs:   1 | totals: | input rows:   1 | out chunks:   1 | out factsets:    11 | took     0s
+                InferPO(_ ?postcard rdf:type <product>)  execs:   1 | totals: | input rows:   1 | out chunks:   1 | out factsets:     5 | took     0s
+                InferSP(_ $postcard <located> ?place)    execs:   1 | totals: | input rows:   5 | out chunks:   1 | out factsets:    11 | took     0s
+
+Diskview Lookups:
+LookupSP
+	RPC Count:      5
+	Avg Lookups:    5.6
+	Avg Results:    4.6
+	Total RPC Time: 0s
+	Avg RPC time:   0s
+LookupPO
+	RPC Count:      3
+	Avg Lookups:    2.0
+	Avg Results:    1.7
+	Total RPC Time: 0s
+	Avg RPC time:   0s
+
+Plan Space:
+Group 6 [vars: ?place ?postcard size: 2]
+	Project ?place ?postcard [5]     costs local [disk: 0 seeks, 0 KiB] combined [disk: 30 seeks, 2 KiB] [best,selected]
+Group 5 [vars: ?place ?postcard size: 2]
+	OrderBy ASC(?place) DESC(?postcard) [4]    costs local [disk: 0 seeks, 0 KiB] combined [disk: 30 seeks, 2 KiB] [best,selected]
+Group 4 [vars: ?place ?postcard size: 2]
+	ExternalIDs [3]                  costs local [disk: 0 seeks, 0 KiB] combined [disk: 30 seeks, 2 KiB] [best,selected]
+Group 3 [vars: ?place ?postcard size: 2]
+	InnerJoin ?postcard [1 2]                  costs local ∞ combined ∞
+	InnerJoin ?postcard [2 1]                  costs local ∞ combined ∞
+	LoopJoin (inner) ?postcard [2 7]           costs local [disk: 0 seeks, 0 KiB] combined ∞
+	LoopJoin (inner) ?postcard [1 8]           costs local [disk: 0 seeks, 0 KiB] combined [disk: 30 seeks, 2 KiB] [best,selected]
+	HashJoin (inner) ?postcard [1 2]           costs local [disk: 0 seeks, 0 KiB] combined ∞
+	HashJoin (inner) ?postcard [2 1]           costs local [disk: 0 seeks, 0 KiB] combined ∞
+Group 8 [vars: ?place ?postcard size: 5]
+	Infer(_ $postcard <located> ?place)        costs local ∞ combined ∞
+	InferSP(_ $postcard <located> ?place)      costs local [disk: 5 seeks, 0 KiB] combined [disk: 5 seeks, 0 KiB] [best,selected]
+Group 7 [vars: ?postcard size: 5]
+	Infer(_ $postcard rdf:type <product>)      costs local ∞ combined ∞
+	InferSPO(_ $postcard rdf:type <product>)   costs local [disk: 5 seeks, 2 KiB] combined [disk: 5 seeks, 2 KiB] [best]
+Group 2 [vars: ?place ?postcard size: 50]
+	Infer(_ ?postcard <located> ?place)        costs local ∞ combined ∞
+Group 1 [vars: ?postcard size: 5]
+	Infer(_ ?postcard rdf:type <product>)      costs local ∞ combined ∞
+	InferPO(_ ?postcard rdf:type <product>)    costs local [disk: 5 seeks, 0 KiB] combined [disk: 5 seeks, 0 KiB] [best,selected]
+

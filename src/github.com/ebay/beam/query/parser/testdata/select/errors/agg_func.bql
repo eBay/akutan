@@ -1,0 +1,4 @@
+SELECT (BOB(?a) as ?Bob) 
+WHERE {
+?a ?b ?c
+}

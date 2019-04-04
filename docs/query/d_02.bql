@@ -1,0 +1,4 @@
+SELECT DISTINCT ?manf WHERE {
+    ?p rdf:type <TV>
+    ?p <manufacturer> ?manf
+}
