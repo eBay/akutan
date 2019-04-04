@@ -1,0 +1,21 @@
+/src/vendor
+/pkg
+/bin
+/dist
+/local/generated/
+/cluster/k8s/generated/
+.DS_Store
+coverage.out
+*.cpu
+*.pb.go
+gen_*.go
+
+# Editor tmp files
+*.swp
+*.swo
+*~
+\#*\#
+.\#*
+.idea/
+.vscode
+/beam.iml
