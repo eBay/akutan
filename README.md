@@ -24,7 +24,7 @@ subject         | predicate | object
 To learn about how to represent and query data in Beam, see
 [docs/query.md](docs/query.md).
 
-Beam is designed to store large graphs than cannot fit on a single server. It's
+Beam is designed to store large graphs that cannot fit on a single server. It's
 scalable in how much data it can store and the rate of queries it can execute.
 However, Beam serializes all changes to the graph through a central log, which
 fundamentally limits the total rate of change. The rate of change won't improve
