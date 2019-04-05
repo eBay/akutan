@@ -50,7 +50,7 @@ Much of Beam's code consists of high-quality, documented, unit-tested modules,
 but some areas of the code base are inherited from Beam's earlier prototype days
 and still need attention. In other places, some functionality is lacking before
 Beam could be used as a critical production data store, including deletion of
-facts, backup/restore, and automated cluster management. (TODO) We have filed
+facts, backup/restore, and automated cluster management. We have filed
 GitHub issues for these and a few other things. There are also areas where Beam
 could be improved that wouldn't necessarily block production usage. For example,
 Beam's query language is not quite compatible with Sparql, and its inference
