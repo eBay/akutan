@@ -200,7 +200,7 @@ docker-build-beam-service-in-minikube:
 dist: build
 	mkdir -p dist/docker
 	cp bin/* dist/
-	cp docker/kafka/init.sh dist/docker
+	cp docker/kafka/{init.sh,*.properties} dist/docker
 	tar --exclude dist/beam.tar.lz4 -c dist/ |lz4 -f - dist/beam.tar.lz4
 
 failed:
