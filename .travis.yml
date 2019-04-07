@@ -23,8 +23,8 @@ before_install:
   - mkdir -p $DIR
   - (cd $DIR && unzip -uo ../protoc-$PROTOCVERSION-linux-x86_64.zip)
   - chmod -R go+rX $DIR
-  - sudo cp -v --preserve=mode $DIR/bin/* /usr/local/bin/
-  - sudo cp -rv --preserve=mode $DIR/include/* /usr/local/include/
+  - sudo cp -av $DIR/bin/* /usr/local/bin/
+  - sudo cp -av $DIR/include/* /usr/local/include/
   # RocksDB
   - git clone https://github.com/facebook/rocksdb.git
   - (cd rocksdb && git reset --hard $ROCKSDBVERSION)
