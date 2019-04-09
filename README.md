@@ -1,5 +1,7 @@
 # Beam
 
+[![Build Status](https://travis-ci.com/eBay/beam.svg?branch=master)](https://travis-ci.com/eBay/beam)
+
 Beam is a distributed knowledge graph store, sometimes called an RDF store or a
 triple store. Knowledge graphs are suitable for modeling data that is highly
 interconnected by many types of relationships, like encyclopedic information
