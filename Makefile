@@ -7,7 +7,7 @@ export CGO_LDFLAGS=-g -O2 -lrocksdb -lstdc++ -lm -lz -lbz2 -lsnappy -llz4 -lzstd
 
 .PHONY: clean get test vet cover run dist protoc no_std_log bench fmt 
 
-all: hooks get build test vet run
+all: get build test vet
 
 clean:
 	rm -rf src/vendor

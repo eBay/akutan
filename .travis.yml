@@ -1,0 +1,33 @@
+dist: xenial
+language: go
+go:
+  - 1.11.5
+  - 1.12.x
+
+addons:
+  apt:
+    update: true
+    packages: #deps for the RocksDB build
+    - libbz2-dev
+    - liblz4-dev
+    - libsnappy-dev
+    - libzstd1-dev
+
+env:
+  - PROTOCVERSION=3.5.1 ROCKSDBVERSION=v5.10.2
+
+before_install:
+  # protoc
+  - curl -LO https://github.com/google/protobuf/releases/download/v$PROTOCVERSION/protoc-$PROTOCVERSION-linux-x86_64.zip
+  - DIR=protoc-$PROTOCVERSION
+  - mkdir -p $DIR
+  - (cd $DIR && unzip -uo ../protoc-$PROTOCVERSION-linux-x86_64.zip)
+  - chmod -R go+rX $DIR
+  - sudo cp -av $DIR/bin/* /usr/local/bin/
+  - sudo cp -av $DIR/include/* /usr/local/include/
+  # RocksDB
+  - sudo docker/build/rocksdb.sh
+
+cache:
+  directories:
+  - rocksdb # RocksDB build is slow, cache it between runs.

@@ -34,4 +34,5 @@ ENV PROTOCVERSION 3.5.1
 ENV ROCKSDBVERSION v5.10.2
 ENV DOCKERAPIVERSION 1.21
 COPY ./docker-beam-builder.sh .
+COPY ./rocksdb.sh .
 RUN ./docker-beam-builder.sh
