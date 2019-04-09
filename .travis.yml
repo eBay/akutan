@@ -26,10 +26,8 @@ before_install:
   - sudo cp -av $DIR/bin/* /usr/local/bin/
   - sudo cp -av $DIR/include/* /usr/local/include/
   # RocksDB
-  - git clone https://github.com/facebook/rocksdb.git
-  - (cd rocksdb && git reset --hard $ROCKSDBVERSION)
-  - (cd rocksdb && EXTRA_CFLAGS='-fPIC' EXTRA_CXXFLAGS='-fPIC' sudo make install-static)
+  - sudo docker/build/rocksdb.sh
 
 cache:
   directories:
-  - $HOME/rocksdb # RocksDB build is slow, cache it between runs.
+  - rocksdb # RocksDB build is slow, cache it between runs.

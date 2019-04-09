@@ -48,10 +48,7 @@ cp -v --preserve=mode $DIR/bin/* /usr/local/bin/
 cp -rv --preserve=mode $DIR/include/* /usr/local/include/
 protoc --version
 
-# rocksdb
-git clone https://github.com/facebook/rocksdb.git
-(cd rocksdb && git reset --hard $ROCKSDBVERSION)
-(cd rocksdb && EXTRA_CFLAGS='-fPIC' EXTRA_CXXFLAGS='-fPIC' make install-static)
+./rocksdb.sh
 
 # in order for the latest version of the docker client to interact with
 # the older version of the daemon, set the version in the environment
