@@ -52,8 +52,9 @@ func KGObjectFromAPI(from api.KGObject) KGObject {
 // AString returns a new KGObject instance containing the supplied string and language ID.
 func AString(s string, langID uint64) KGObject {
 	b := new(kgObjectBuilder)
-	b.resetAndWriteType(KtString, 1+len(s)+19)
+	b.resetAndWriteType(KtString, 1+len(s)+20)
 	b.buff.WriteString(s)
+	b.buff.WriteByte(0)
 	appendUInt64(&b.buff, 19, langID)
 	return KGObject{b.buff.String()}
 }

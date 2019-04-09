@@ -43,7 +43,8 @@ type KGObject struct {
 	//  LangID:		19 bytes [only for string]
 	//
 	// TypeBytes
-	//	String: 	the utf8 bytes of the string, no terminator, length is not encoded anywhere
+	//  String:     The utf8 bytes of the string, a terminating 0x00. length is not encoded anywhere.
+	//              The nil is to ensure correct ordering, its not used to determine the end of the string.
 	//  Float64:  	take the raw bits, invert them all if the value is negative, invert just the sign bit if its >= 0
 	//  Int64:  	8 bytes, the sign bit is flipped, which results in -MaxInt64 == 0(x8) & MaxInt64 = FF(x8) and 0 = 0x80 00 00 00 00 00 00 00
 	//  Timestamp: 	[year 2 bytes][month 1][day 1][hour 1][minutes 1][seconds 1][nanoseconds 4 bytes][precision 1 byte] normalized to GMT
@@ -168,7 +169,7 @@ type WriteOpts struct {
 // the 'opts' can be used to control exactly what is written
 func (o KGObject) WriteTo(buff *bytes.Buffer, opts WriteOpts) {
 	if opts.NoLangID && o.IsType(KtString) {
-		buff.WriteString(o.value[0 : len(o.value)-19])
+		buff.WriteString(o.value[0 : len(o.value)-20])
 		return
 	}
 	buff.WriteString(o.AsString())
