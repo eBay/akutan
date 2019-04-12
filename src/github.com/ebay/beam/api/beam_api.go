@@ -41,65 +41,6 @@ func (m QueryFactsRequest) String() string {
 	return buf.String()
 }
 
-func (m InsertFactsResult) String() string {
-	var buf strings.Builder
-	fmt.Fprintf(&buf, "InsertFactsResult{")
-	fmt.Fprintf(&buf, "\n Index: %d", m.Index)
-	fmt.Fprint(&buf, "\n VarResults:")
-	for i, id := range m.VarResults {
-		if i > 0 {
-			fmt.Fprint(&buf, ",")
-		}
-		fmt.Fprintf(&buf, " %d", id)
-	}
-	fmt.Fprint(&buf, "\n FactIDs:")
-	for _, factID := range m.FactIds {
-		fmt.Fprintf(&buf, "\n  %d", factID)
-	}
-	fmt.Fprintf(&buf, "\n}")
-	return buf.String()
-}
-
-func (m InsertFactsRequest) String() string {
-	return m.string("")
-}
-
-func (m InsertFactsRequest) string(indent string) string {
-	var buf strings.Builder
-	fmt.Fprintf(&buf, "InsertFactsRequest{\n")
-	fmt.Fprintf(&buf, "%s NewSubjectVars: %s\n", indent, strings.Join(m.NewSubjectVars, ", "))
-	fmt.Fprintf(&buf, "%s Facts:\n", indent)
-	for _, fact := range m.Facts {
-		fmt.Fprintf(&buf, "%s  %s\n", indent, fact)
-	}
-	fmt.Fprintf(&buf, "%s}", indent)
-	return buf.String()
-}
-
-func (f InsertFact) String() string {
-	var buf strings.Builder
-	if f.FactIDVar != "" {
-		fmt.Fprintf(&buf, "?%s: ", f.FactIDVar)
-	}
-	fmt.Fprintf(&buf, "%s ", f.Subject)
-	fmt.Fprintf(&buf, "%s ", f.Predicate)
-	fmt.Fprintf(&buf, "%s", f.Object)
-	return buf.String()
-}
-
-func (m KIDOrVar) String() string {
-	switch m.Value.(type) {
-	case *KIDOrVar_Kid:
-		return fmt.Sprintf("#%d", m.GetKid())
-	case *KIDOrVar_Var:
-		return fmt.Sprintf("?%s", m.GetVar())
-	case nil:
-		return "(nil)"
-	default:
-		panic(fmt.Sprintf("Unknown kid/var: %T", m.Value))
-	}
-}
-
 // String returns a string version of the KGValue in the same format that
 // the query parser expects.
 func (m KGValue) String() string {
@@ -151,19 +92,6 @@ func (m KGObject) String() string {
 		return "(nil)"
 	default:
 		panic(fmt.Sprintf("Unknown KGObject value type: %T", m.Value))
-	}
-}
-
-func (m KGObjectOrVar) String() string {
-	switch m.Value.(type) {
-	case *KGObjectOrVar_Object:
-		return m.GetObject().String()
-	case *KGObjectOrVar_Var:
-		return fmt.Sprintf("?%s", m.GetVar())
-	case nil:
-		return "(nil)"
-	default:
-		panic(fmt.Sprintf("Unknown KGObjectOrVar value type: %T", m.Value))
 	}
 }
 
