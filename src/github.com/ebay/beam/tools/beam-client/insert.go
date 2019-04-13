@@ -62,32 +62,3 @@ func readFile(filename string) (string, error) {
 	input, err := ioutil.ReadFile(filename)
 	return string(input), err
 }
-
-func insertFact(ctx context.Context, store api.BeamFactStoreClient, options *options) error {
-	var v []string
-	if options.NewSubjectVar != "" {
-		v = []string{options.NewSubjectVar}
-	}
-	req := api.InsertFactsRequest{
-		NewSubjectVars: v,
-		Facts: []api.InsertFact{
-			{
-				Subject:   options.InsertSubject,
-				Predicate: options.InsertPredicate,
-				Object:    options.InsertObject,
-			},
-		},
-	}
-	log.Infof("Invoking InsertFacts (%d vars, 1 fact): %+v",
-		len(req.NewSubjectVars), req)
-
-	start := time.Now()
-	resp, err := store.InsertFacts(ctx, &req)
-	if err != nil {
-		return err
-	}
-	log.Infof("InsertFacts returned: %+v", resp)
-	log.Infof("InsertFacts took %s", time.Since(start))
-
-	return nil
-}

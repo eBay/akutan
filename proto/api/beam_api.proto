@@ -35,7 +35,6 @@ service BeamFactStore {
 	rpc queryFacts(QueryFactsRequest) returns (stream QueryFactsResult);
 	rpc lookup_sp(LookupSPRequest) returns (LookupSPResult);
 	rpc lookup_po(LookupPORequest) returns (LookupPOResult);
-	rpc insertFacts(InsertFactsRequest) returns (InsertFactsResult);
 }
 
 // QueryRequest is used to specify a SELECT/ASK-style query that returns a
@@ -300,49 +299,4 @@ message LookupPOResult {
 	}
 	repeated Items results = 1 [(gogoproto.nullable)=false];
 	int64 index = 2;
-}
-
-// InsertFactsRequest is the request for the deprecated insertFacts RPC.
-message InsertFactsRequest {
-	option (gogoproto.stringer)=false;
-	// Each entry in this array will cause a new subjectID to be created, and
-	// assigned to the named var. You can use the named var in the
-	// InsertFact.subject.var field to bind it to a fact being inserted. You
-	// must use each subject ID created.
-	repeated string newSubjectVars = 1;
-	repeated InsertFact facts = 2 [(gogoproto.nullable)=false]; 
-}
-
-message InsertFact {
-	option (gogoproto.stringer)=false;
-	// Specify a var if you need to bind the created fact ID to a subsequent
-	// fact in the same insert request.
-	string factIDVar     = 1;
-	KIDOrVar subject     = 2 [(gogoproto.nullable)=false];
-	KIDOrVar predicate   = 3 [(gogoproto.nullable)=false];
-	KGObjectOrVar object = 4 [(gogoproto.nullable)=false]; 
-}
-
-message KIDOrVar {
-	option (gogoproto.stringer)=false;
-	oneof value {
-		uint64 kid = 1;
-		string var = 2;
-	}
-}
-
-message KGObjectOrVar {
-	option (gogoproto.stringer)=false;
-	oneof value {
-		KGObject object = 1;
-		string var 		= 2;
-	}
-}
-
-// InsertFactsResult is the reply to the deprecated insertFacts RPC.
-message InsertFactsResult {
-	option (gogoproto.stringer)=false;
-	repeated uint64 varResults = 1;
-	repeated uint64 factIds    = 2;
-	int64 index = 3;
 }

@@ -45,7 +45,6 @@ const usage = `beam-client is a command-line tool for calling the Beam API servi
 Usage:
   beam-client [--api=HOST -t=DUR --trace=HOST] query [-i=NUM] FILE
   beam-client [--api=HOST -t=DUR --trace=HOST --format=FORMAT] insert FILE
-  beam-client [--api=HOST -t=DUR --trace=HOST] insertfact [--new=VAR] SUBJECT PREDICATE OBJECT
   beam-client [--api=HOST -t=DUR --trace=HOST] queryfacts [-i=NUM] [--noextids] [QUERYSTRING]
   beam-client [--api=HOST -t=DUR --trace=HOST] lookupsp [-i=NUM] SUBJECT PREDICATE
   beam-client [--api=HOST -t=DUR --trace=HOST] lookuppo [-i=NUM] PREDICATE OBJECT
@@ -54,7 +53,6 @@ Usage:
 Options:
   --api=HOST                        Host and port of Beam API server to connect to [default: localhost:9987]
   -t=DUR, --timeout=DUR             Timeout for RPC calls to Beam API tier [default: 10s]
-  --new=VAR                         Create a new entity to reference in the inserted fact.
   -i=NUM, --index=NUM               Log index to specify in request.
   -w=WAITFOR, --waitfor=WAITFOR     Duration to wait for wipe to complete.
   --noextids                        Don't resolve/print KID externalIDs in fact results.
@@ -62,13 +60,6 @@ Options:
   --format=FORMAT                   File format for inserting facts [default: tsv]
 
 Examples:
-  # To create a fact '<car1> <fits> <part1>', first create KIDs for 'car1', 'fits' and 'part1'
-  # by using HasExternalID(#4) predicate, and then create a fact with the KIDs.
-  beam-client insertfact --new=c '?c' '#4' '"car1"'  # returned VarResults: 1430001
-  beam-client insertfact --new=f '?f' '#4' '"fits"'  # returned VarResults: 1454001
-  beam-client insertfact --new=p '?p' '#4' '"part1"' # returned VarResults: 1487001
-  beam-client insertfact '#1430001' '#1454001' '#1487001'
-
   # Multiple line insert fact usage.
   beam-client insert - <<EOF  
   <car1>  <fits> 	  <part1>
@@ -127,15 +118,6 @@ type options struct {
 	Filename string `docopt:"FILE"`
 	Format   string
 
-	// InsertFact
-	InsertFact      bool   `docopt:"insertfact"`
-	LangID          uint64 `docopt:"--langid"`
-	UnitID          uint64 `docopt:"--unitid"`
-	NewSubjectVar   string `docopt:"--new"`
-	InsertSubject   api.KIDOrVar
-	InsertPredicate api.KIDOrVar
-	InsertObject    api.KGObjectOrVar
-
 	// Wipe
 	Wipe              bool
 	WipeWaitFor       time.Duration
@@ -166,28 +148,6 @@ func parseArgs() *options {
 	if options.Timeout == 0 {
 		options.Timeout = time.Hour
 	}
-	if options.InsertFact {
-		options.InsertSubject, err = parseKIDOrVar(options.SubjectString)
-	} else {
-		options.Subject, err = parseLiteralID(options.SubjectString)
-	}
-	if err != nil {
-		log.Fatalf("Unable to parse subject value: %v", err)
-	}
-	if options.InsertFact {
-		options.InsertPredicate, err = parseKIDOrVar(options.PredicateString)
-	} else {
-		options.Predicate, err = parseLiteralID(options.PredicateString)
-	}
-	if err != nil {
-		log.Fatalf("Unable to parse predicate value: %v", err)
-	}
-	if options.InsertFact {
-		options.InsertObject, err = parseKGObjectOrVar(options.ObjectString)
-	}
-	if err != nil {
-		log.Fatalf("Unable to parse object value: %v", err)
-	}
 	if options.Wipe {
 		if options.WipeWaitForString != "" {
 			options.WipeWaitFor, err = time.ParseDuration(options.WipeWaitForString)
@@ -197,44 +157,6 @@ func parseArgs() *options {
 		}
 	}
 	return &options
-}
-
-// parseKIDOrVar parses the query term and returns the api object or variable for 'insert'
-func parseKIDOrVar(in string) (api.KIDOrVar, error) {
-	term, err := parser.ParseTerm(in)
-	if err != nil {
-		return api.KIDOrVar{}, err
-	}
-	if variable, ok := term.(*parser.Variable); ok {
-		return api.KIDOrVar{Value: &api.KIDOrVar_Var{Var: variable.Name}}, nil
-	}
-	if literalID, ok := term.(*parser.LiteralID); ok {
-		return api.KIDOrVar{Value: &api.KIDOrVar_Kid{Kid: literalID.Value}}, nil
-	}
-	if literalInt, ok := term.(*parser.LiteralInt); ok {
-		if literalInt.Value > 0 {
-			return api.KIDOrVar{Value: &api.KIDOrVar_Kid{Kid: uint64(literalInt.Value)}}, nil
-		}
-	}
-	return api.KIDOrVar{}, fmt.Errorf("invalid kid or var: '%s' %T", in, term)
-}
-
-// parseKGObjectOrVar parses the query term and returns the api object or variable for 'insert'
-func parseKGObjectOrVar(in string) (api.KGObjectOrVar, error) {
-	term, err := parser.ParseTerm(in)
-	if err != nil {
-		return api.KGObjectOrVar{}, err
-	}
-	if variable, ok := term.(*parser.Variable); ok {
-		return api.KGObjectOrVar{Value: &api.KGObjectOrVar_Var{Var: variable.Name}}, nil
-	}
-	// TODO Once language and units semantics are finalized and implemented,
-	// need to make it available at the client side.
-	if literal, ok := term.(parser.Literal); ok {
-		obj := literal.Literal()
-		return api.KGObjectOrVar{Value: &api.KGObjectOrVar_Object{Object: obj}}, nil
-	}
-	return api.KGObjectOrVar{}, fmt.Errorf("invalid kgobject or var: '%s'", in)
 }
 
 func main() {
@@ -276,11 +198,6 @@ func main() {
 		err := insert(ctx, factStore, options)
 		if err != nil {
 			log.Fatalf("Error executing Insert: %v", err)
-		}
-	case options.InsertFact:
-		err := insertFact(timeoutCtx, factStore, options)
-		if err != nil {
-			log.Fatalf("Error executing InsertFact: %v", err)
 		}
 	case options.LookupPO:
 		err := lookupPO(timeoutCtx, factStore, options)
@@ -409,25 +326,4 @@ func (k *kidPrinter) format(kid uint64) string {
 		return fmtr.Sprintf("%d: <%s>", kid, extID)
 	}
 	return fmtr.Sprintf("%d", kid)
-}
-
-// parseLiteralID parses an input string into a KID or returns an error.
-func parseLiteralID(in string) (parser.LiteralID, error) {
-	if in == "" {
-		return parser.LiteralID{}, nil
-	}
-	literal, err := parser.ParseLiteral(in)
-	if err != nil {
-		return parser.LiteralID{}, err
-	}
-	if lint, ok := literal.(*parser.LiteralInt); ok {
-		if lint.Value > 0 {
-			return parser.LiteralID{Value: uint64(lint.Value)}, nil
-		}
-		return parser.LiteralID{}, fmt.Errorf("unable to parse literal id: '%s'", in)
-	}
-	if lid, ok := literal.(*parser.LiteralID); ok {
-		return *lid, nil
-	}
-	return parser.LiteralID{}, fmt.Errorf("invalid literal id: '%s'", in)
 }
