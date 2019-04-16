@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Command gen-local writes out files used to run a Beam cluster locally.
 package main
 
 import (

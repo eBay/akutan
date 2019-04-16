@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Command grpcbench is a small benchmark tool for gRPC.
 package main
 
 import (
