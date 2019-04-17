@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Command db-scan reads all keys from a Rocks database.
 package main
 
 import (

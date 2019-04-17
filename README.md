@@ -1,6 +1,7 @@
 # Beam
 
 [![Build Status](https://travis-ci.com/eBay/beam.svg?branch=master)](https://travis-ci.com/eBay/beam)
+[![GoDoc](https://godoc.org/github.com/eBay/beam/src/github.com/ebay/beam?status.svg)](https://godoc.org/github.com/eBay/beam/src/github.com/ebay/beam)
 
 Beam is a distributed knowledge graph store, sometimes called an RDF store or a
 triple store. Knowledge graphs are suitable for modeling data that is highly
