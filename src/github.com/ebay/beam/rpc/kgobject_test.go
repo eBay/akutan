@@ -37,6 +37,8 @@ var orderedVals = []api.KGObject{
 	kgobject.AString("", 0),
 	kgobject.AString("Bob", 0),
 	kgobject.AString("Bob's House", 0),
+	kgobject.AString("Bob's House", 1),
+	kgobject.AString("Bob's Housf", 0),
 	kgobject.AString("Hello World", 0),
 	kgobject.AString("Hello World \u65e5\u672c\u8a9e", 0),
 	kgobject.AString("a", 0),
@@ -102,7 +104,7 @@ func Test_KGObjectRoundTrip(t *testing.T) {
 		assert.Equal(t, apiObj, decAPIObj, "failed to roundtrip kgobject %+v", apiObj)
 		if idx > 0 && (prevKey[0] == key[0]) {
 			cmp := bytes.Compare(prevKey, key)
-			assert.Equal(t, -1, cmp, "previous key expected to be smaller:\n  %d:%16x\n  %d:%16x\n  %d:%v\n  %d:%v", idx-1, prevKey, idx, key, idx-1, orderedVals[idx-1], idx, apiObj)
+			assert.Equal(t, -1, cmp, "previous key expected to be smaller:\n  %d:%16x\n  %d:%16x\n  %d:%v\n  %d:%v\n", idx-1, prevKey, idx, key, idx-1, orderedVals[idx-1], idx, apiObj)
 			assert.True(t, prevObj.Less(rpcObj))
 			assert.False(t, rpcObj.Less(prevObj))
 		}
