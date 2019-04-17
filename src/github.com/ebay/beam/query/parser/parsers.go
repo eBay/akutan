@@ -293,6 +293,15 @@ func termLineParser(termAndSpecificity, termSep, lineSep goparsify.Parser) gopar
 		if disallowed(&spo[0], "Subject") || disallowed(&spo[2], "Object") {
 			return
 		}
+		// Disallow nil's in string literals. This is required to ensure strings
+		// sort correctly in KGObject.
+		if litString, ok := res.Object.(*LiteralString); ok {
+			if strings.IndexByte(litString.Value, 0) >= 0 {
+				s.ErrorHere("string literal to not contain a nil")
+				s.Pos = start
+				return
+			}
+		}
 		r.Result = &res
 	})
 }
