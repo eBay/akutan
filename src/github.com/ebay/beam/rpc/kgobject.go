@@ -43,8 +43,10 @@ type KGObject struct {
 	//  LangID:		19 bytes [only for string]
 	//
 	// TypeBytes
-	//  String:     The utf8 bytes of the string, a terminating 0x00. length is not encoded anywhere.
-	//              The nil is to ensure correct ordering, its not used to determine the end of the string.
+	//  String:     The UTF8 bytes of the string, a terminating 0x00. length is not encoded anywhere.
+	//              The nil is to ensure correct ordering, its not used to determine the end of the
+	//              string. The string may not contain nil's. KGObject doesn't require the string to
+	//              valid UTF8, however other parts of the system may.
 	//  Float64:  	take the raw bits, invert them all if the value is negative, invert just the sign bit if its >= 0
 	//  Int64:  	8 bytes, the sign bit is flipped, which results in -MaxInt64 == 0(x8) & MaxInt64 = FF(x8) and 0 = 0x80 00 00 00 00 00 00 00
 	//  Timestamp: 	[year 2 bytes][month 1][day 1][hour 1][minutes 1][seconds 1][nanoseconds 4 bytes][precision 1 byte] normalized to GMT
@@ -161,14 +163,16 @@ func (o KGObject) AsString() string {
 // WriteOpts contains options that control the data written out by the
 // KGOBject.WriteTo method.
 type WriteOpts struct {
-	// NoLangID Will skip writing the LanguageID for KGObjects of type string
+	// NoLangID Will skip writing the null separator and LanguageID for
+	// KGObjects of type string.
 	NoLangID bool
 }
 
-// WriteTo will write some or all the encoded data that describes this KGObject,
-// the 'opts' can be used to control exactly what is written
+// WriteTo will write all or some prefix of the encoded data that describes this
+// KGObject, the 'opts' can be used to control exactly what is written
 func (o KGObject) WriteTo(buff *bytes.Buffer, opts WriteOpts) {
 	if opts.NoLangID && o.IsType(KtString) {
+		// 1 for the null separator, 19 for the langID
 		buff.WriteString(o.value[0 : len(o.value)-20])
 		return
 	}

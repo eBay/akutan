@@ -30,7 +30,7 @@ import (
 )
 
 // if you add new cases here, put them in value order, as the test will verify
-// that the generated key of each subsequent item of the same type is lexographically
+// that the generated key of each subsequent item of the same type is lexicographically
 // after the previous one
 var orderedVals = []api.KGObject{
 	api.KGObject{},
