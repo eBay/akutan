@@ -30,11 +30,15 @@ import (
 )
 
 // if you add new cases here, put them in value order, as the test will verify
-// that the generated key of each subsequent item of the same type is lexographically
+// that the generated key of each subsequent item of the same type is lexicographically
 // after the previous one
 var orderedVals = []api.KGObject{
 	api.KGObject{},
 	kgobject.AString("", 0),
+	kgobject.AString("Bob", 0),
+	kgobject.AString("Bob's House", 0),
+	kgobject.AString("Bob's House", 1),
+	kgobject.AString("Bob's Housf", 0),
 	kgobject.AString("Hello World", 0),
 	kgobject.AString("Hello World \u65e5\u672c\u8a9e", 0),
 	kgobject.AString("a", 0),
@@ -98,9 +102,9 @@ func Test_KGObjectRoundTrip(t *testing.T) {
 		assert.NoError(t, err)
 		decAPIObj := decRPCObj.ToAPIObject()
 		assert.Equal(t, apiObj, decAPIObj, "failed to roundtrip kgobject %+v", apiObj)
-		if idx > 0 && (prevKey[0] == key[0]) && prevKey[0] != byte(KtString) { // TODO: skip string for now because of missing seperator beween the string & the langID
+		if idx > 0 && (prevKey[0] == key[0]) {
 			cmp := bytes.Compare(prevKey, key)
-			assert.Equal(t, -1, cmp, "previous key expected to be smaller:\n  %d:%16x\n  %d:%16x\n  %d:%v\n  %d:%v", idx-1, prevKey, idx, key, idx-1, orderedVals[idx-1], idx, apiObj)
+			assert.Equal(t, -1, cmp, "previous key expected to be smaller:\n  %d:%16x\n  %d:%16x\n  %d:%v\n  %d:%v\n", idx-1, prevKey, idx, key, idx-1, orderedVals[idx-1], idx, apiObj)
 			assert.True(t, prevObj.Less(rpcObj))
 			assert.False(t, rpcObj.Less(prevObj))
 		}
@@ -206,14 +210,16 @@ func Test_WriteTo(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, kgo, r)
 	}
-	// currently the LangID is encoding into a 19 byte ascii string
+	// Currently the LangID is encoded into a trailing 19 byte ASCII string
+	// [utf8 bytes][0x00][19 char langID]
 	x := AString("Bob", 42)
 	b := bytes.Buffer{}
 	x.WriteTo(&b, WriteOpts{NoLangID: true})
+	assert.True(t, bytes.HasSuffix(b.Bytes(), []byte("Bob")))
 	assert.False(t, bytes.Contains(b.Bytes(), []byte("42")))
 	b2 := bytes.Buffer{}
 	x.WriteTo(&b2, WriteOpts{})
-	assert.Equal(t, b2.Len(), b.Len()+19)
+	assert.Equal(t, b2.Len(), b.Len()+20)
 }
 
 // This is an old test from when KGObject had a Hash method. The test has been

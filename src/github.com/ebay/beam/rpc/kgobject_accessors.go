@@ -91,7 +91,7 @@ func (o KGObject) ValFloat64() float64 {
 // representation of the Object.
 func (o KGObject) ValString() string {
 	if o.ValueType() == KtString {
-		return string(o.value[1 : len(o.value)-19])
+		return string(o.value[1 : len(o.value)-20])
 	}
 	return ""
 }

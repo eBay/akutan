@@ -210,7 +210,7 @@ func Test_FactKeyBytes(t *testing.T) {
 	}
 	pos := FactKey{Fact: &f, Encoding: rpc.KeyEncodingPOS}
 	assert.Equal(t, []byte("fpos^0000000000000054321^"+
-		"\x01Bob0000000000000000001^"+
+		"\x01Bob\x000000000000000000001^"+
 		"0000000000000012345^"+
 		"0000000000000077777^"+
 		"0000000000000066666"), pos.Bytes())
@@ -218,7 +218,7 @@ func Test_FactKeyBytes(t *testing.T) {
 	spo := FactKey{Fact: &f, Encoding: rpc.KeyEncodingSPO}
 	assert.Equal(t, []byte("fspo^0000000000000012345^"+
 		"0000000000000054321^"+
-		"\x01Bob0000000000000000001^"+
+		"\x01Bob\x000000000000000000001^"+
 		"0000000000000077777^"+
 		"0000000000000066666"), spo.Bytes())
 }
