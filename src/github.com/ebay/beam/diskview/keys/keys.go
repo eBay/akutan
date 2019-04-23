@@ -19,21 +19,22 @@ package keys
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 
 	"github.com/ebay/beam/blog"
 	"github.com/ebay/beam/rpc"
-	"github.com/ebay/beam/util/errors"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
-	carrot = '^'
+	// Min size of an encoded fact is prefix(1) + subj,pred,id,index(4x8), + obj(at least 1) = 34.
+	minFactKeySize = 34
 )
 
 var (
-	prefixPOSBytes = []byte("fpos^")
-	prefixSPOBytes = []byte("fspo^")
+	prefixPOSBytes = []byte("p")
+	prefixSPOBytes = []byte("s")
 
 	beamMetaKeyBytes  = []byte("beammeta")
 	beamStatsKeyBytes = []byte("beamstats")
@@ -98,10 +99,14 @@ func encodePOS(f *rpc.Fact, to posKeyPrefix) []byte {
 		panic(fmt.Sprintf("Invalid posKeyPrefix of %d passed to encodePOS", to))
 	}
 	var b bytes.Buffer
-	// [prefix_POS][pred_19]^[obj_pb]^[subj_19]^[id_19]^[idx_19]
+	tmp := make([]byte, 8)
+	appendUInt64 := func(v uint64) {
+		binary.BigEndian.PutUint64(tmp, v)
+		b.Write(tmp)
+	}
+	// [prefix_POS][pred_8][obj_pb][subj_8][id_8][idx_8]
 	b.Write(prefixPOSBytes)
-	appendUInt64(&b, 19, f.Predicate)
-	b.WriteByte(carrot)
+	appendUInt64(f.Predicate)
 
 	switch {
 	case to == posPredicateObjectType:
@@ -112,14 +117,11 @@ func encodePOS(f *rpc.Fact, to posKeyPrefix) []byte {
 
 	case to >= posPredicateObjectSubject:
 		f.Object.WriteTo(&b, rpc.WriteOpts{NoLangID: false})
-		b.WriteByte(carrot)
-		appendUInt64(&b, 19, f.Subject)
+		appendUInt64(f.Subject)
 
 		if to == posFull {
-			b.WriteByte(carrot)
-			appendUInt64(&b, 19, f.Id)
-			b.WriteByte(carrot)
-			appendUInt64(&b, 19, f.Index)
+			appendUInt64(f.Id)
+			appendUInt64(f.Index)
 		}
 	}
 	return b.Bytes()
@@ -132,14 +134,17 @@ func encodeSPO(f *rpc.Fact, to spoKeyPrefix) []byte {
 		panic(fmt.Sprintf("Invalid spoKeyPrefix of %d passed to encodeSPO", to))
 	}
 	var b bytes.Buffer
-	// [prefix_SPO][sub_19]^[pred_19]^[obj_pb]^[id_19]^[idx_19]
+	tmp := make([]byte, 8)
+	appendUInt64 := func(v uint64) {
+		binary.BigEndian.PutUint64(tmp, v)
+		b.Write(tmp)
+	}
+	// [prefix_SPO][sub_8][pred_8][obj_pb][id_8][idx_8]
 	b.Write(prefixSPOBytes)
-	appendUInt64(&b, 19, f.Subject)
-	b.WriteByte(carrot)
+	appendUInt64(f.Subject)
 
 	if to >= spoSubjectPredicate {
-		appendUInt64(&b, 19, f.Predicate)
-		b.WriteByte(carrot)
+		appendUInt64(f.Predicate)
 
 		switch {
 		case to == spoSubjectPredicateObjectNoLang:
@@ -149,10 +154,8 @@ func encodeSPO(f *rpc.Fact, to spoKeyPrefix) []byte {
 			f.Object.WriteTo(&b, rpc.WriteOpts{NoLangID: false})
 
 			if to == spoFull {
-				b.WriteByte(carrot)
-				appendUInt64(&b, 19, f.Id)
-				b.WriteByte(carrot)
-				appendUInt64(&b, 19, f.Index)
+				appendUInt64(f.Id)
+				appendUInt64(f.Index)
 			}
 		}
 	}
@@ -204,22 +207,17 @@ func FactKeysEqualIgnoreIndex(a, b []byte) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	return len(a) > 20 && bytes.Equal(a[:len(a)-20], b[:len(b)-20])
+	return len(a) >= minFactKeySize && bytes.Equal(a[:len(a)-8], b[:len(b)-8])
 }
 
 // ParseIndex extracts the index from the provided key [if it has one] and returns it
 // otherwise returns 0.
 func ParseIndex(key []byte) blog.Index {
-	if len(key) < 21 {
+	if len(key) < 8 {
 		log.Debugf("keys.ParseIndex called with key with no index: %s", key)
 		return 0
 	}
-	index, err := parseUInt(key, len(key)-19, len(key))
-	if err != nil {
-		log.Debugf("keys.ParseIndex unable to scan index: %s, %s", key, err)
-		return 0
-	}
-	return index
+	return binary.BigEndian.Uint64(key[len(key)-8:])
 }
 
 // MetaKey represents the well known key for that contains the current diskview
@@ -249,10 +247,10 @@ func (s StatsKey) Bytes() []byte {
 // or nil/error
 func ParseKey(key []byte) (Spec, error) {
 	switch {
-	case bytes.HasPrefix(key, prefixPOSBytes) && len(key) > 85:
+	case bytes.HasPrefix(key, prefixPOSBytes) && len(key) >= minFactKeySize:
 		return toFactKey(rpc.KeyEncodingPOS, key)
 
-	case bytes.HasPrefix(key, prefixSPOBytes) && len(key) > 85:
+	case bytes.HasPrefix(key, prefixSPOBytes) && len(key) >= minFactKeySize:
 		return toFactKey(rpc.KeyEncodingSPO, key)
 
 	case bytes.Equal(key, beamMetaKeyBytes):
@@ -267,14 +265,18 @@ func ParseKey(key []byte) (Spec, error) {
 func toFactKey(enc rpc.FactKeyEncoding, key []byte) (FactKey, error) {
 	switch enc {
 	case rpc.KeyEncodingPOS:
-		// prefix[pred_19]^[obj_pb]^[sub_19]^[id_19]^[idx_19]
+		// prefix[pred_8][obj_pb][sub_8][id_8][idx_8]
 		key = key[len(prefixPOSBytes):]
-		idx, err1 := parseUInt(key, len(key)-19, len(key))
-		p, err2 := parseUInt(key, 0, 19)
-		id, err3 := parseUInt(key, len(key)-39, len(key)-20)
-		sub, err4 := parseUInt(key, len(key)-59, len(key)-40)
-		obj, err5 := rpc.KGObjectFromBytes(key[20 : len(key)-60])
-		res := FactKey{
+		l := len(key)
+		p := binary.BigEndian.Uint64(key[:8])
+		obj, err := rpc.KGObjectFromBytes(key[8 : l-24])
+		sub := binary.BigEndian.Uint64(key[l-24 : l-16])
+		id := binary.BigEndian.Uint64(key[l-16 : l-8])
+		idx := binary.BigEndian.Uint64(key[l-8:])
+		if err != nil {
+			return FactKey{}, err
+		}
+		return FactKey{
 			Encoding: enc,
 			Fact: &rpc.Fact{
 				Index:     idx,
@@ -283,18 +285,21 @@ func toFactKey(enc rpc.FactKeyEncoding, key []byte) (FactKey, error) {
 				Predicate: p,
 				Object:    obj,
 			},
-		}
-		return res, errors.Any(err1, err2, err3, err4, err5)
+		}, nil
 
 	case rpc.KeyEncodingSPO:
-		// prefix[sub_19]^[pred_19]^[obj_pb]^[id_19]^[idx_19]
+		// prefix[sub_8][pred_8][obj_pb][id_8][idx_8]
 		key = key[len(prefixSPOBytes):]
-		idx, err1 := parseUInt(key, len(key)-19, len(key))
-		sub, err2 := parseUInt(key, 0, 19)
-		p, err3 := parseUInt(key, 20, 39)
-		id, err4 := parseUInt(key, len(key)-39, len(key)-20)
-		obj, err5 := rpc.KGObjectFromBytes(key[40 : len(key)-40])
-		res := FactKey{
+		l := len(key)
+		sub := binary.BigEndian.Uint64(key[:8])
+		p := binary.BigEndian.Uint64(key[8:16])
+		obj, err := rpc.KGObjectFromBytes(key[16 : l-16])
+		id := binary.BigEndian.Uint64(key[l-16 : l-8])
+		idx := binary.BigEndian.Uint64(key[l-8:])
+		if err != nil {
+			return FactKey{}, err
+		}
+		return FactKey{
 			Encoding: enc,
 			Fact: &rpc.Fact{
 				Index:     idx,
@@ -303,8 +308,7 @@ func toFactKey(enc rpc.FactKeyEncoding, key []byte) (FactKey, error) {
 				Predicate: p,
 				Object:    obj,
 			},
-		}
-		return res, errors.Any(err1, err2, err3, err4, err5)
+		}, nil
 
 	default:
 		panic(fmt.Sprintf("Unexpected FactKeyEncoding passed to toFactKey() %d", enc))

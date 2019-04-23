@@ -26,6 +26,19 @@ func Copy(src []byte) []byte {
 	return r
 }
 
+// Concat returns a new byte slice with all the parts appended together.
+func Concat(parts ...[]byte) []byte {
+	total := 0
+	for _, p := range parts {
+		total += len(p)
+	}
+	out := make([]byte, 0, total)
+	for _, p := range parts {
+		out = append(out, p...)
+	}
+	return out
+}
+
 // StringWriter defines an abstract set of functions used when writing strings.
 // bytes.Buffer, bufio.Writer & strings.Builder all implement this interface.
 //
