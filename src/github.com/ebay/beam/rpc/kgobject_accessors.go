@@ -17,7 +17,6 @@ package rpc
 
 import (
 	"encoding/binary"
-	"fmt"
 	"math"
 	"time"
 
@@ -33,7 +32,7 @@ func (o KGObject) TypePrefix() []byte {
 		return []byte{byte(KtNil)}
 	}
 	if vt != KtString && vt != KtKID {
-		return []byte(o.value[:20])
+		return []byte(o.value[:9])
 	}
 	return []byte(o.value[:1])
 }
@@ -56,7 +55,7 @@ func (o KGObject) IsType(t KGObjectType) bool {
 func (o KGObject) ValBool() bool {
 	// TODO: Why does Bool has a units field?
 	if o.ValueType() == KtBool {
-		return o.value[1+19] > 0
+		return o.value[1+8] > 0
 	}
 	return false
 }
@@ -65,7 +64,7 @@ func (o KGObject) ValBool() bool {
 // otherwise it returns 0
 func (o KGObject) ValInt64() int64 {
 	if o.ValueType() == KtInt64 {
-		return int64(binary.BigEndian.Uint64([]byte(o.value[20:28])) ^ maskMsbOnly)
+		return int64(binary.BigEndian.Uint64([]byte(o.value[9:17])) ^ maskMsbOnly)
 	}
 	return 0
 }
@@ -74,7 +73,7 @@ func (o KGObject) ValInt64() int64 {
 // otherwise it returns 0
 func (o KGObject) ValFloat64() float64 {
 	if o.ValueType() == KtFloat64 {
-		u := binary.BigEndian.Uint64([]byte(o.value[20:28]))
+		u := binary.BigEndian.Uint64([]byte(o.value[9:17]))
 		if u&maskMsbOnly != 0 {
 			u = u ^ maskMsbOnly
 		} else {
@@ -91,7 +90,7 @@ func (o KGObject) ValFloat64() float64 {
 // representation of the Object.
 func (o KGObject) ValString() string {
 	if o.ValueType() == KtString {
-		return string(o.value[1 : len(o.value)-20])
+		return string(o.value[1 : len(o.value)-9])
 	}
 	return ""
 }
@@ -109,14 +108,14 @@ func (o KGObject) ValKID() uint64 {
 // otherwise it returns an empty/zero value KGTimestamp
 func (o KGObject) ValTimestamp() logentry.KGTimestamp {
 	if o.ValueType() == KtTimestamp {
-		p := logentry.TimestampPrecision(o.value[31])
-		year := int(binary.BigEndian.Uint16([]byte(o.value[20:22])))
-		month := int(o.value[22])
-		day := int(o.value[23])
-		hour := int(o.value[24])
-		mins := int(o.value[25])
-		secs := int(o.value[26])
-		nano := int(binary.BigEndian.Uint32([]byte(o.value[27:31])))
+		p := logentry.TimestampPrecision(o.value[20])
+		year := int(binary.BigEndian.Uint16([]byte(o.value[9:11])))
+		month := int(o.value[11])
+		day := int(o.value[12])
+		hour := int(o.value[13])
+		mins := int(o.value[14])
+		secs := int(o.value[15])
+		nano := int(binary.BigEndian.Uint32([]byte(o.value[16:20])))
 		return logentry.KGTimestamp{
 			Precision: p,
 			Value:     time.Date(year, time.Month(month), day, hour, mins, secs, nano, time.UTC),
@@ -129,11 +128,7 @@ func (o KGObject) ValTimestamp() logentry.KGTimestamp {
 // otherwise it returns 0
 func (o KGObject) LangID() uint64 {
 	if o.ValueType() == KtString {
-		v, err := parseUInt([]byte(o.value), len(o.value)-19, len(o.value))
-		if err != nil {
-			panic(fmt.Sprintf("Unable to decode LangID from rpc.KGObject: %v", err))
-		}
-		return v
+		return binary.BigEndian.Uint64([]byte(o.value[len(o.value)-8:]))
 	}
 	return 0
 }
@@ -142,12 +137,8 @@ func (o KGObject) LangID() uint64 {
 // otherwise it returns 0
 func (o KGObject) UnitID() uint64 {
 	vt := o.ValueType()
-	if vt != KtString && vt != KtKID {
-		unit, err := parseUInt([]byte(o.value), 1, 20)
-		if err != nil {
-			panic(fmt.Sprintf("Unable to decode UnitID from rpc.KGObject: %v", err))
-		}
-		return unit
+	if vt != KtString && vt != KtKID && vt != KtNil {
+		return binary.BigEndian.Uint64([]byte(o.value[1:9]))
 	}
 	return 0
 }

@@ -179,12 +179,12 @@ func Test_POSPrefixes(t *testing.T) {
 
 	assert.Equal(t, []byte("fpos^0000000000000054321^\x01"),
 		KeyPrefixPredicateObjectType(54321, rpc.AString("Bob", 11)))
-	assert.Equal(t, []byte("fpos^0000000000000054321^\x030000000000000000011"),
+	assert.Equal(t, []byte("fpos^0000000000000054321^\x03\x00\x00\x00\x00\x00\x00\x00\x0B"),
 		KeyPrefixPredicateObjectType(54321, rpc.AInt64(5, 11)))
 
 	assert.Equal(t, []byte("fpos^0000000000000054321^\x01Bob"),
 		KeyPrefixPredicateObjectNoLang(54321, rpc.AString("Bob", 11)))
-	assert.Equal(t, []byte("fpos^0000000000000054321^\x030000000000000000011\x80\x00\x00\x00\x00\x00\x00\x05"),
+	assert.Equal(t, []byte("fpos^0000000000000054321^\x03\x00\x00\x00\x00\x00\x00\x00\x0B\x80\x00\x00\x00\x00\x00\x00\x05"),
 		KeyPrefixPredicateObjectNoLang(54321, rpc.AInt64(5, 11)))
 }
 
@@ -192,12 +192,11 @@ func Test_SPOPrefixes(t *testing.T) {
 	assert.Equal(t, []byte("fspo^0000000000000012345^"), KeyPrefixSubject(12345))
 	assert.Equal(t, []byte("fspo^0000000000000012345^0000000000000054321^"),
 		KeyPrefixSubjectPredicate(12345, 54321))
-	// TODO: The string encoding should have a terminator between the string and
-	// the follow-on language ID.
+
 	assert.Equal(t, []byte("fspo^0000000000000012345^0000000000000054321^\x01Bob"),
 		KeyPrefixSubjectPredicateObjectNoLang(12345, 54321, rpc.AString("Bob", 1)))
-	assert.Equal(t, []byte("fspo^0000000000000012345^0000000000000054321^\x050000000000000000001\x01"),
-		KeyPrefixSubjectPredicateObjectNoLang(12345, 54321, rpc.ABool(true, 1)))
+	assert.Equal(t, []byte("fspo^0000000000000012345^0000000000000054321^\x05\x00\x00\x00\x00\x00\x00\x00\x02\x01"),
+		KeyPrefixSubjectPredicateObjectNoLang(12345, 54321, rpc.ABool(true, 2)))
 }
 
 func Test_FactKeyBytes(t *testing.T) {
@@ -210,7 +209,7 @@ func Test_FactKeyBytes(t *testing.T) {
 	}
 	pos := FactKey{Fact: &f, Encoding: rpc.KeyEncodingPOS}
 	assert.Equal(t, []byte("fpos^0000000000000054321^"+
-		"\x01Bob\x000000000000000000001^"+
+		"\x01Bob\x00\x00\x00\x00\x00\x00\x00\x00\x01^"+
 		"0000000000000012345^"+
 		"0000000000000077777^"+
 		"0000000000000066666"), pos.Bytes())
@@ -218,7 +217,7 @@ func Test_FactKeyBytes(t *testing.T) {
 	spo := FactKey{Fact: &f, Encoding: rpc.KeyEncodingSPO}
 	assert.Equal(t, []byte("fspo^0000000000000012345^"+
 		"0000000000000054321^"+
-		"\x01Bob\x000000000000000000001^"+
+		"\x01Bob\x00\x00\x00\x00\x00\x00\x00\x00\x01^"+
 		"0000000000000077777^"+
 		"0000000000000066666"), spo.Bytes())
 }
