@@ -26,7 +26,7 @@ import (
 // the data into the protobuf types.
 //
 // One difference is for KtNil, in go this is the zero value of the KGObject type (i.e. KGObject{value:""})
-// but for marshalling/persistence we want to explictly record it's nilness, so we marshal that as
+// but for marshalling/persistence we want to explicitly record it's nilness, so we marshal that as
 // []byte{ktNil}
 
 // Size returns the number of bytes required to serialize an instance of this KGObject

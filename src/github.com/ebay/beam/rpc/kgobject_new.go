@@ -52,18 +52,18 @@ func KGObjectFromAPI(from api.KGObject) KGObject {
 // AString returns a new KGObject instance containing the supplied string and language ID.
 func AString(s string, langID uint64) KGObject {
 	b := new(kgObjectBuilder)
-	b.resetAndWriteType(KtString, 1+len(s)+20)
+	b.resetAndWriteType(KtString, 1+len(s)+1+8)
 	b.buff.WriteString(s)
 	b.buff.WriteByte(0)
-	appendUInt64(&b.buff, 19, langID)
+	b.writeUInt64(langID)
 	return KGObject{b.buff.String()}
 }
 
 // AFloat64 returns a new KGObject instance containing the supplied float and Units ID.
 func AFloat64(fv float64, unitID uint64) KGObject {
 	b := new(kgObjectBuilder)
-	b.resetAndWriteType(KtFloat64, 1+19+8)
-	appendUInt64(&b.buff, 19, unitID)
+	b.resetAndWriteType(KtFloat64, 1+8+8)
+	b.writeUInt64(unitID)
 	u := math.Float64bits(fv)
 	if fv < 0 {
 		u = u ^ maskAllBits
@@ -77,8 +77,8 @@ func AFloat64(fv float64, unitID uint64) KGObject {
 // AInt64 returns a new KGObject instance containing the supplied int and Units ID.
 func AInt64(v int64, unitID uint64) KGObject {
 	b := new(kgObjectBuilder)
-	b.resetAndWriteType(KtInt64, 1+19+8)
-	appendUInt64(&b.buff, 19, unitID)
+	b.resetAndWriteType(KtInt64, 1+8+8)
+	b.writeUInt64(unitID)
 	b.writeUInt64(uint64(v) ^ maskMsbOnly)
 	return KGObject{b.buff.String()}
 }
@@ -121,8 +121,8 @@ func ATimestampYMDHMSN(year, month, day, hour, minute, second, nsec int, unitID 
 // ATimestamp returns a new KGObject instance containing a Timestamp for the supplied dateTime, precision and Units ID.
 func ATimestamp(v time.Time, p logentry.TimestampPrecision, unitID uint64) KGObject {
 	b := new(kgObjectBuilder)
-	b.resetAndWriteType(KtTimestamp, 1+19+12)
-	appendUInt64(&b.buff, 19, unitID)
+	b.resetAndWriteType(KtTimestamp, 1+8+12)
+	b.writeUInt64(unitID)
 	t := v.UTC()
 	y, mo, d, h, mi, s, n := 0, time.January, 1, 0, 0, 0, 0
 	if p >= logentry.Year {
@@ -157,11 +157,11 @@ func ATimestamp(v time.Time, p logentry.TimestampPrecision, unitID uint64) KGObj
 	return KGObject{b.buff.String()}
 }
 
-// ABool returns an new KGObject intance containing a Boolean value and Units ID.
+// ABool returns an new KGObject instance containing a Boolean value and Units ID.
 func ABool(v bool, unitID uint64) KGObject {
 	b := new(kgObjectBuilder)
-	b.resetAndWriteType(KtBool, 1+19+1)
-	appendUInt64(&b.buff, 19, unitID)
+	b.resetAndWriteType(KtBool, 1+8+1)
+	b.writeUInt64(unitID)
 	if v {
 		b.buff.WriteByte(1)
 	} else {
@@ -170,7 +170,7 @@ func ABool(v bool, unitID uint64) KGObject {
 	return KGObject{b.buff.String()}
 }
 
-// AKID returns an new KGObject intance containing a KID value.
+// AKID returns an new KGObject instance containing a KID value.
 func AKID(kid uint64) KGObject {
 	b := new(kgObjectBuilder)
 	b.resetAndWriteType(KtKID, 1+8)

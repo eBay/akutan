@@ -38,9 +38,9 @@ type KGObject struct {
 	// All sub value are encoded in big endian format
 	//
 	// 	Type: 		1 byte
-	//	UnitID:		19 bytes [only for float64, int64, timestamp, bool]
+	//	UnitID:		8 bytes [only for float64, int64, timestamp, bool], big endian uint64
 	//  TypeBytes: 	N bytes depends on type
-	//  LangID:		19 bytes [only for string]
+	//  LangID:		8 bytes [only for string], big endian uint64
 	//
 	// TypeBytes
 	//  String:     The UTF8 bytes of the string, a terminating 0x00. length is not encoded anywhere.
@@ -68,7 +68,7 @@ const (
 	// KtNil indicates the KGObject has no type.
 	KtNil KGObjectType = 0
 
-	// KtString indicates the KGObject contains an arbitary unicode string.
+	// KtString indicates the KGObject contains an arbitrary unicode string.
 	KtString KGObjectType = 1
 
 	// KtFloat64 indicates the KGObject contains an 8 byte double precision float.
@@ -77,16 +77,16 @@ const (
 	// KtInt64 indicates the KGObject contains an 8 byte signed integer.
 	KtInt64 KGObjectType = 3
 
-	// KtTimestamp indicates the KGObject contains a KGTimestamp, which constists
+	// KtTimestamp indicates the KGObject contains a KGTimestamp, which consists
 	// of a point in time and a precision indication that says which fields to
-	// pay attention to
+	// pay attention to.
 	KtTimestamp KGObjectType = 4
 
-	// KtBool indicates the KGObject contains a boolean
+	// KtBool indicates the KGObject contains a boolean.
 	KtBool KGObjectType = 5
 
 	// KtKID indicates the KGObject contains a KID (a Knowledge Graph ID), aka a node in the graph
-	// rather than a literal value
+	// rather than a literal value.
 	KtKID KGObjectType = 6
 )
 
@@ -95,7 +95,7 @@ func (o KGObject) Equal(other KGObject) bool {
 	return o.value == other.value
 }
 
-// Less returns true if 'o' is lexigraphically smaller than 'right'
+// Less returns true if 'o' is lexicographically smaller than 'right'
 // When 'o' & 'right' are of different types, the types are compared
 // in a consistent order
 func (o KGObject) Less(right KGObject) bool {
@@ -146,7 +146,7 @@ func KGObjectFromBytes(data []byte) (KGObject, error) {
 }
 
 // AsBytes returns a serialized state of this KGObject. You can take these bytes
-// and pass them to KGObjectFrom to re-hydrate a KGObject instance
+// and pass them to KGObjectFromBytes to re-hydrate a KGObject instance
 func (o *KGObject) AsBytes() []byte {
 	b, _ := o.Marshal()
 	return b
@@ -161,7 +161,7 @@ func (o KGObject) AsString() string {
 }
 
 // WriteOpts contains options that control the data written out by the
-// KGOBject.WriteTo method.
+// KGObject.WriteTo method.
 type WriteOpts struct {
 	// NoLangID Will skip writing the null separator and LanguageID for
 	// KGObjects of type string.
@@ -172,8 +172,8 @@ type WriteOpts struct {
 // KGObject, the 'opts' can be used to control exactly what is written
 func (o KGObject) WriteTo(buff *bytes.Buffer, opts WriteOpts) {
 	if opts.NoLangID && o.IsType(KtString) {
-		// 1 for the null separator, 19 for the langID
-		buff.WriteString(o.value[0 : len(o.value)-20])
+		// 1 for the null separator, 8 for the langID
+		buff.WriteString(o.value[0 : len(o.value)-9])
 		return
 	}
 	buff.WriteString(o.AsString())

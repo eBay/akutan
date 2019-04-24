@@ -133,8 +133,8 @@ func Test_TypePrefix(t *testing.T) {
 	// Add the rest of the types after we fix the encoding
 	tests := []tc{
 		{KGObject{}, []byte{byte(KtNil)}},
-		{AString("bob", 42), []byte{byte(KtString)}},
-		{AInt64(128, 42), append([]byte{byte(KtInt64)}, "0000000000000000042"...)},
+		{AString("bob", 0x42), []byte{byte(KtString)}},
+		{AInt64(128, 0x42), []byte{byte(KtInt64), 0, 0, 0, 0, 0, 0, 0, 0x42}},
 	}
 	for _, c := range tests {
 		actualPrefix := c.obj.TypePrefix()
@@ -210,16 +210,17 @@ func Test_WriteTo(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, kgo, r)
 	}
-	// Currently the LangID is encoded into a trailing 19 byte ASCII string
-	// [utf8 bytes][0x00][19 char langID]
-	x := AString("Bob", 42)
+	// Currently the LangID is encoded into a trailing 8 byte value
+	// [utf8 bytes][0x00][8 bytes]
+	x := AString("Bob", 0x32)
 	b := bytes.Buffer{}
 	x.WriteTo(&b, WriteOpts{NoLangID: true})
 	assert.True(t, bytes.HasSuffix(b.Bytes(), []byte("Bob")))
-	assert.False(t, bytes.Contains(b.Bytes(), []byte("42")))
+	assert.False(t, bytes.Contains(b.Bytes(), []byte{0x32}))
+	assert.False(t, bytes.Contains(b.Bytes(), []byte("32")))
 	b2 := bytes.Buffer{}
 	x.WriteTo(&b2, WriteOpts{})
-	assert.Equal(t, b2.Len(), b.Len()+20)
+	assert.Equal(t, b2.Len(), b.Len()+1+8)
 }
 
 // This is an old test from when KGObject had a Hash method. The test has been
@@ -311,27 +312,28 @@ func Test_IsKGObject(t *testing.T) {
 		m(101, "bob"),
 		m(KtNil, "x"),
 		m(KtInt64, ""),
-		m(KtInt64, "1234567890123456789AABBCCDDe"),
-		m(KtInt64, "1234567890123456789AABBCCD"),
+		m(KtInt64, "12345678AABBCCDDe"),
+		m(KtInt64, "12345678AABBCCD"),
 		m(KtFloat64, ""),
-		m(KtFloat64, "1234567890123456789AABBCCDDe"),
-		m(KtFloat64, "1234567890123456789AABBCCD"),
+		m(KtFloat64, "12345678AABBCCDDe"),
+		m(KtFloat64, "12345678AABBCCD"),
 		m(KtBool, ""),
 		m(KtBool, "xx"),
 		m(KtString, ""),
-		m(KtString, "123456789012345678"),
+		m(KtString, "12345678"),
+		m(KtString, "112345678"),
 		m(KtTimestamp, ""),
-		m(KtTimestamp, "123456789012345678qqqqqqqq"),
+		m(KtTimestamp, "12345678qqqqqqqq"),
 		m(KtKID, ""),
 		m(KtKID, "1234567"),
 		m(KtKID, "123456789"),
 	}
-	for _, tc := range tests {
+	for idx, tc := range tests {
 		e := isKGObject(tc)
-		assert.NotNil(t, e)
+		assert.NotNil(t, e, "input %d:%v", idx, tc)
 		_, err := KGObjectFromBytes(tc)
-		assert.NotNil(t, err)
-		assert.Equal(t, e, err)
+		assert.NotNil(t, err, "input %d:%v", idx, tc)
+		assert.Equal(t, e, err, "input %d:%v", idx, tc)
 	}
 }
 

@@ -22,7 +22,6 @@ import (
 	"math"
 	"strings"
 
-	"github.com/ebay/beam/util/cmp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -85,32 +84,36 @@ func isKGObject(d []byte) error {
 		}
 		return nil
 	case KtString:
-		// is expected to contain a string followed by a 19 char langID
-		if len(d) < 20 {
+		// is expected to contain a string followed by a nil & 8 byte langID
+		if len(d) < 1+1+8 {
 			return fmt.Errorf("data is not long enough for a KtString type KGObject")
+		}
+		// is expected to contain a nil before the 8 byte tailing langID
+		if d[len(d)-9] != 0 {
+			return fmt.Errorf("data is missing expected null separator between string and langID")
 		}
 		return nil
 	case KtInt64:
 		fallthrough
 	case KtFloat64:
-		// is expected to contain a typeID, a 19 char unitID followed by an 8 byte value
-		if len(d) != 28 {
+		// is expected to contain a typeID, a 8 byte unitID followed by an 8 byte value
+		if len(d) != 1+8+8 {
 			return fmt.Errorf("data of incorrect length for a KGObject of type %d", t)
 		}
 		return nil
 	case KtTimestamp:
-		if len(d) != 1+19+2+1+1+1+1+1+4+1 {
+		if len(d) != 1+8+2+1+1+1+1+1+4+1 {
 			return fmt.Errorf("data of incorrect length for a KGObject of type KtTimestamp")
 		}
 		return nil
 	case KtBool:
-		if len(d) != 21 {
+		if len(d) != 1+8+1 {
 			return fmt.Errorf("data of incorrect length for a KGObject of type KtBool")
 		}
 		return nil
 	case KtKID:
 		// type + 8 byte KID
-		if len(d) != 9 {
+		if len(d) != 1+8 {
 			return fmt.Errorf("data of incorrect length for a KGObject of type KtKID")
 		}
 		return nil
@@ -123,49 +126,3 @@ const maskMsbOnly = uint64(1 << 63)
 
 // maskAllBits has all 64 bits set
 const maskAllBits = uint64(0xFFFFFFFFFFFFFFFF)
-
-// The 2 functions below are copied from diskview/keys/unit64.go
-// We can delete them when we switch to a binary encoding for KIDs in
-// KGObjects & Facts on disk
-
-// parseInt will parse a base 10 from val starting at index 'startPos'
-// strconv.ParseInt requires a string, which is annoying
-// especially as ParseInt converts it back to a []byte anyway
-// also see this stupid stance on not adding a version that takes []byte
-//  https://github.com/golang/go/issues/2632
-// Note that this will not detect tht your string overflows a int64
-func parseUInt(val []byte, startPos, endPos int) (uint64, error) {
-	res := uint64(0)
-	vl := len(val)
-	endPos = cmp.MinInt(vl, endPos)
-	for p := startPos; p < endPos; p++ {
-		if val[p] < '0' || val[p] > '9' {
-			return res, fmt.Errorf("unable to parse '%s' into an int, unexpected char '%c'", val[startPos:endPos], val[p])
-		}
-		n := uint64(val[p] - '0')
-		res = res*10 + n
-	}
-	return res, nil
-}
-
-// appendUInt64 will append to the buffer the val formatted to base 10
-// padded with leading 0's to the indicated padTo size.
-// this is equivilent to fmt.Fprintf(&buf, "%0{padSize}d", val)
-// but is much faster and does zero heap allocations
-func appendUInt64(b *strings.Builder, padTo int, val uint64) {
-	s := [20]uint8{
-		'0', '0', '0', '0',
-		'0', '0', '0', '0',
-		'0', '0', '0', '0',
-		'0', '0', '0', '0',
-		'0', '0', '0', '0',
-	}
-	pos := len(s) - 1
-	for val != 0 {
-		s[pos] = uint8(val%10) + '0'
-		val = val / 10
-		pos--
-	}
-	pos = cmp.MinInt(pos+1, len(s)-padTo)
-	b.Write(s[pos:])
-}

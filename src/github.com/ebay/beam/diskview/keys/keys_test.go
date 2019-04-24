@@ -174,30 +174,41 @@ func Test_POSKeyOrder(t *testing.T) {
 	}
 }
 
-func Test_POSPrefixes(t *testing.T) {
-	assert.Equal(t, []byte("fpos^0000000000000054321^"), KeyPrefixPredicate(54321))
+var (
+	kid54321 = []byte("\x00\x00\x00\x00\x00\x00\xD4\x31")
+	kid12345 = []byte("\x00\x00\x00\x00\x00\x00\x30\x39")
+	kid66666 = []byte("\x00\x00\x00\x00\x00\x01\x04\x6A")
+	kid77777 = []byte("\x00\x00\x00\x00\x00\x01\x2F\xD1")
+)
 
-	assert.Equal(t, []byte("fpos^0000000000000054321^\x01"),
+func Test_POSPrefixes(t *testing.T) {
+	pre := []byte("p")
+	assert.Equal(t, concat(pre, kid54321), KeyPrefixPredicate(54321))
+
+	assert.Equal(t, concat(pre, kid54321, []byte{0x01}),
 		KeyPrefixPredicateObjectType(54321, rpc.AString("Bob", 11)))
-	assert.Equal(t, []byte("fpos^0000000000000054321^\x030000000000000000011"),
+	assert.Equal(t, concat(pre, kid54321, []byte("\x03\x00\x00\x00\x00\x00\x00\x00\x0B")),
 		KeyPrefixPredicateObjectType(54321, rpc.AInt64(5, 11)))
 
-	assert.Equal(t, []byte("fpos^0000000000000054321^\x01Bob"),
+	assert.Equal(t, concat(pre, kid54321, []byte("\x01Bob")),
 		KeyPrefixPredicateObjectNoLang(54321, rpc.AString("Bob", 11)))
-	assert.Equal(t, []byte("fpos^0000000000000054321^\x030000000000000000011\x80\x00\x00\x00\x00\x00\x00\x05"),
+	assert.Equal(t, concat(pre, kid54321, []byte("\x03\x00\x00\x00\x00\x00\x00\x00\x0B\x80\x00\x00\x00\x00\x00\x00\x05")),
 		KeyPrefixPredicateObjectNoLang(54321, rpc.AInt64(5, 11)))
 }
 
+func concat(parts ...[]byte) []byte {
+	return bytes.Join(parts, nil)
+}
+
 func Test_SPOPrefixes(t *testing.T) {
-	assert.Equal(t, []byte("fspo^0000000000000012345^"), KeyPrefixSubject(12345))
-	assert.Equal(t, []byte("fspo^0000000000000012345^0000000000000054321^"),
-		KeyPrefixSubjectPredicate(12345, 54321))
-	// TODO: The string encoding should have a terminator between the string and
-	// the follow-on language ID.
-	assert.Equal(t, []byte("fspo^0000000000000012345^0000000000000054321^\x01Bob"),
+	pre := []byte("s")
+	assert.Equal(t, concat(pre, kid12345), KeyPrefixSubject(12345))
+	assert.Equal(t, concat(pre, kid12345, kid54321), KeyPrefixSubjectPredicate(12345, 54321))
+
+	assert.Equal(t, concat(pre, kid12345, kid54321, []byte("\x01Bob")),
 		KeyPrefixSubjectPredicateObjectNoLang(12345, 54321, rpc.AString("Bob", 1)))
-	assert.Equal(t, []byte("fspo^0000000000000012345^0000000000000054321^\x050000000000000000001\x01"),
-		KeyPrefixSubjectPredicateObjectNoLang(12345, 54321, rpc.ABool(true, 1)))
+	assert.Equal(t, concat(pre, kid12345, kid54321, []byte("\x05\x00\x00\x00\x00\x00\x00\x00\x02\x01")),
+		KeyPrefixSubjectPredicateObjectNoLang(12345, 54321, rpc.ABool(true, 2)))
 }
 
 func Test_FactKeyBytes(t *testing.T) {
@@ -209,18 +220,18 @@ func Test_FactKeyBytes(t *testing.T) {
 		Id:        77777,
 	}
 	pos := FactKey{Fact: &f, Encoding: rpc.KeyEncodingPOS}
-	assert.Equal(t, []byte("fpos^0000000000000054321^"+
-		"\x01Bob\x000000000000000000001^"+
-		"0000000000000012345^"+
-		"0000000000000077777^"+
-		"0000000000000066666"), pos.Bytes())
+	assert.Equal(t, concat([]byte("p"), kid54321,
+		[]byte("\x01Bob\x00\x00\x00\x00\x00\x00\x00\x00\x01"),
+		kid12345,
+		kid77777,
+		kid66666), pos.Bytes())
 
 	spo := FactKey{Fact: &f, Encoding: rpc.KeyEncodingSPO}
-	assert.Equal(t, []byte("fspo^0000000000000012345^"+
-		"0000000000000054321^"+
-		"\x01Bob\x000000000000000000001^"+
-		"0000000000000077777^"+
-		"0000000000000066666"), spo.Bytes())
+	assert.Equal(t, concat([]byte("s"), kid12345,
+		kid54321,
+		[]byte("\x01Bob\x00\x00\x00\x00\x00\x00\x00\x00\x01"),
+		kid77777,
+		kid66666), spo.Bytes())
 }
 
 func Test_FactKeyBytes_ChecksEncoding(t *testing.T) {
@@ -231,7 +242,7 @@ func Test_FactKeyBytes_ChecksEncoding(t *testing.T) {
 }
 
 func Test_ParseIndex(t *testing.T) {
-	idx := blog.Index(12345)
+	idx := blog.Index(0x8182838485868788)
 	for _, tc := range makeKeySpecs(idx) {
 		if !tc.index {
 			continue
@@ -241,10 +252,7 @@ func Test_ParseIndex(t *testing.T) {
 		assert.Equal(t, idx, pIdx)
 	}
 
-	f := rpc.Fact{Id: 12345, Index: 99999}
-	k := encodePOS(&f, posFull)
-	notInt := bytes.Replace(k, []byte("999"), []byte("ABC"), 1)
-	assert.EqualValues(t, 0, ParseIndex(notInt))
+	assert.EqualValues(t, 0, ParseIndex([]byte("1234567")), "Should get 0 as there aren't 8 bytes")
 	assert.EqualValues(t, 0, ParseIndex(nil))
 }
 
