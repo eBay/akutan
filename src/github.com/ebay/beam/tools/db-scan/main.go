@@ -121,14 +121,14 @@ func iter(db database.DB, cpu, trc string, printKeys bool, printBytes bool) *sta
 	if printKeys {
 		printer = func(k, _ []byte) {
 			if printBytes {
-				fmt.Printf("%s\n", k)
+				fmt.Printf("%v\n", k)
 				return
 			}
 			ik, err := keys.ParseKey(k)
 			if err != nil {
 				return
 			}
-			fk, ok := ik.(*keys.FactKey)
+			fk, ok := ik.(keys.FactKey)
 			if !ok {
 				return
 			}
