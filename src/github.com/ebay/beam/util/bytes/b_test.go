@@ -30,11 +30,3 @@ func Test_Copy(t *testing.T) {
 	x[0] = 42
 	assert.Equal(t, []byte{1, 2, 3}, c)
 }
-
-func Test_Concat(t *testing.T) {
-	assert.Equal(t, []byte{}, Concat())
-	a := []byte("aaa")
-	b := []byte("bbbb")
-	c := []byte("ccccc")
-	assert.Equal(t, []byte("aaabbbbccccc"), Concat(a, b, c))
-}

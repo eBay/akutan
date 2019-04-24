@@ -23,7 +23,6 @@ import (
 	"github.com/ebay/beam/blog"
 	"github.com/ebay/beam/logentry"
 	"github.com/ebay/beam/rpc"
-	b "github.com/ebay/beam/util/bytes"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -184,27 +183,31 @@ var (
 
 func Test_POSPrefixes(t *testing.T) {
 	pre := []byte("p")
-	assert.Equal(t, b.Concat(pre, kid54321), KeyPrefixPredicate(54321))
+	assert.Equal(t, concat(pre, kid54321), KeyPrefixPredicate(54321))
 
-	assert.Equal(t, b.Concat(pre, kid54321, []byte{0x01}),
+	assert.Equal(t, concat(pre, kid54321, []byte{0x01}),
 		KeyPrefixPredicateObjectType(54321, rpc.AString("Bob", 11)))
-	assert.Equal(t, b.Concat(pre, kid54321, []byte("\x03\x00\x00\x00\x00\x00\x00\x00\x0B")),
+	assert.Equal(t, concat(pre, kid54321, []byte("\x03\x00\x00\x00\x00\x00\x00\x00\x0B")),
 		KeyPrefixPredicateObjectType(54321, rpc.AInt64(5, 11)))
 
-	assert.Equal(t, b.Concat(pre, kid54321, []byte("\x01Bob")),
+	assert.Equal(t, concat(pre, kid54321, []byte("\x01Bob")),
 		KeyPrefixPredicateObjectNoLang(54321, rpc.AString("Bob", 11)))
-	assert.Equal(t, b.Concat(pre, kid54321, []byte("\x03\x00\x00\x00\x00\x00\x00\x00\x0B\x80\x00\x00\x00\x00\x00\x00\x05")),
+	assert.Equal(t, concat(pre, kid54321, []byte("\x03\x00\x00\x00\x00\x00\x00\x00\x0B\x80\x00\x00\x00\x00\x00\x00\x05")),
 		KeyPrefixPredicateObjectNoLang(54321, rpc.AInt64(5, 11)))
+}
+
+func concat(parts ...[]byte) []byte {
+	return bytes.Join(parts, nil)
 }
 
 func Test_SPOPrefixes(t *testing.T) {
 	pre := []byte("s")
-	assert.Equal(t, b.Concat(pre, kid12345), KeyPrefixSubject(12345))
-	assert.Equal(t, b.Concat(pre, kid12345, kid54321), KeyPrefixSubjectPredicate(12345, 54321))
+	assert.Equal(t, concat(pre, kid12345), KeyPrefixSubject(12345))
+	assert.Equal(t, concat(pre, kid12345, kid54321), KeyPrefixSubjectPredicate(12345, 54321))
 
-	assert.Equal(t, b.Concat(pre, kid12345, kid54321, []byte("\x01Bob")),
+	assert.Equal(t, concat(pre, kid12345, kid54321, []byte("\x01Bob")),
 		KeyPrefixSubjectPredicateObjectNoLang(12345, 54321, rpc.AString("Bob", 1)))
-	assert.Equal(t, b.Concat(pre, kid12345, kid54321, []byte("\x05\x00\x00\x00\x00\x00\x00\x00\x02\x01")),
+	assert.Equal(t, concat(pre, kid12345, kid54321, []byte("\x05\x00\x00\x00\x00\x00\x00\x00\x02\x01")),
 		KeyPrefixSubjectPredicateObjectNoLang(12345, 54321, rpc.ABool(true, 2)))
 }
 
@@ -217,14 +220,14 @@ func Test_FactKeyBytes(t *testing.T) {
 		Id:        77777,
 	}
 	pos := FactKey{Fact: &f, Encoding: rpc.KeyEncodingPOS}
-	assert.Equal(t, b.Concat([]byte("p"), kid54321,
+	assert.Equal(t, concat([]byte("p"), kid54321,
 		[]byte("\x01Bob\x00\x00\x00\x00\x00\x00\x00\x00\x01"),
 		kid12345,
 		kid77777,
 		kid66666), pos.Bytes())
 
 	spo := FactKey{Fact: &f, Encoding: rpc.KeyEncodingSPO}
-	assert.Equal(t, b.Concat([]byte("s"), kid12345,
+	assert.Equal(t, concat([]byte("s"), kid12345,
 		kid54321,
 		[]byte("\x01Bob\x00\x00\x00\x00\x00\x00\x00\x00\x01"),
 		kid77777,
