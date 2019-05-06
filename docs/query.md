@@ -124,7 +124,7 @@ SELECT * WHERE {
  <QN65Q6FNAF> |
 ```
 
-## Comparisions
+## Comparisons
 
 Values can be compared by specifying additional facts that describe the
 comparison. In place of the predicate field, use `<eq>`, `<notEqual>`, `<gt>`,
