@@ -89,7 +89,9 @@ Beam has the following system dependencies:
  - It's written in [Go](https://golang.org/). You'll need v1.11.5 or newer.
  - Beam uses [Protocol Buffers](https://developers.google.com/protocol-buffers/)
    extensively to encode messages for [gRPC](https://grpc.io/), the log of data
-   changes, and storage on disk. You'll need protobuf version 3.
+   changes, and storage on disk. You'll need protobuf version 3. We reccomend
+   3.5.2 or later. Note that 3.0.x is the default in many Linux distributions, but
+   doesn't work with the Beam build.
  - Beam's Disk Views store their facts in [RocksDB](https://rocksdb.org/).
 
 On Mac OS X, these can all be installed via [Homebrew](https://brew.sh/):
@@ -145,7 +147,9 @@ configure Kafka to synchronously write entries to disk.
 To use Kafka with Beam, set the `beamLog`'s `type` to `kafka` in your Beam
 configuration (default: `local/config.json`), and update the `locator`'s
 `addresses` accordingly (Kafka uses port 9092 by default). You'll need to clear
-out Beam's Disk Views' data before restarting the cluster.
+out Beam's Disk Views' data before restarting the cluster. The Disk Views
+by default store their data in $TMPDIR/rocksdb-beam-diskview-{space}-{partition}
+so you can delete them all with `rm -rf $TMPDIR/rocksdb-beam-diskview*`
 
 ### Docker and Kubernetes
 
