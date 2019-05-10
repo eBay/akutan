@@ -89,7 +89,9 @@ Beam has the following system dependencies:
  - It's written in [Go](https://golang.org/). You'll need v1.11.5 or newer.
  - Beam uses [Protocol Buffers](https://developers.google.com/protocol-buffers/)
    extensively to encode messages for [gRPC](https://grpc.io/), the log of data
-   changes, and storage on disk. You'll need protobuf version 3.
+   changes, and storage on disk. You'll need protobuf version 3. We reccomend
+   3.5.2 or later. Note that 3.0.x is the default in many Linux distributions, but
+   doesn't work with the Beam build.
  - Beam's Disk Views store their facts in [RocksDB](https://rocksdb.org/).
 
 On Mac OS X, these can all be installed via [Homebrew](https://brew.sh/):
