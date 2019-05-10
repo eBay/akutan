@@ -147,7 +147,9 @@ configure Kafka to synchronously write entries to disk.
 To use Kafka with Beam, set the `beamLog`'s `type` to `kafka` in your Beam
 configuration (default: `local/config.json`), and update the `locator`'s
 `addresses` accordingly (Kafka uses port 9092 by default). You'll need to clear
-out Beam's Disk Views' data before restarting the cluster.
+out Beam's Disk Views' data before restarting the cluster. The Disk Views
+by default store their data in $TMPDIR/rocksdb-beam-diskview-{space}-{partition}
+so you can delete them all with `rm -rf $TMPDIR/rocksdb-beam-diskview*`
 
 ### Docker and Kubernetes
 
