@@ -6,7 +6,7 @@ kind: PersistentVolume
 apiVersion: v1
 metadata:
   name: {{$v.Name}}
-  namespace: beam-dev
+  namespace: akutan-dev
   annotations:
     volume.beta.kubernetes.io/storage-class: local-ssd
   labels:
@@ -17,5 +17,5 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: /mnt/beam/{{$v.Name}}
+    path: /mnt/akutan/{{$v.Name}}
 {{- end}}

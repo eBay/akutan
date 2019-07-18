@@ -94,7 +94,8 @@
     // This is a whitelist of words that we think we spell just fine.
     "cSpell.words": [
         "Enumerate's",
-        "beamql",
+        "akutan",
+        "akutanql",
         "btree",
         "cfg",
         "cmds",

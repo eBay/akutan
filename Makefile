@@ -1,7 +1,7 @@
 SHELL=/bin/bash
 export GOPATH=$(shell pwd)
 ROOT=$(shell pwd)
-PACKAGE=github.com/ebay/beam
+PACKAGE=github.com/ebay/akutan
 # gorocksdb build settings
 export CGO_LDFLAGS=-g -O2 -lrocksdb -lstdc++ -lm -lz -lbz2 -lsnappy -llz4 -lzstd
 
@@ -15,7 +15,7 @@ clean:
 	rm -rf pkg
 	rm -rf dist
 	find src/${PACKAGE} -name "*.pb.go" -delete
-	rm -f src/github.com/ebay/beam/util/cmp/gen_cmp.go
+	rm -f src/github.com/ebay/akutan/util/cmp/gen_cmp.go
 
 # Set up git hooks. If you want to opt out of the hooks, set this config value
 # to blank or some other directory.
@@ -26,7 +26,7 @@ get: get_clone get_install
 
 get_clone:
 	mkdir -p src/vendor/github.com
-	go run src/github.com/ebay/beam/tools/dep/*.go
+	go run src/github.com/ebay/akutan/tools/dep/*.go
 
 get_install:
 	go install vendor/github.com/gogo/protobuf/protoc-gen-gogoslick
@@ -50,42 +50,42 @@ define protoc_go
 	) >> $(strip $1)/$(basename $(strip $3)).pb.go
 endef
 
-src/github.com/ebay/beam/rpc/views.pb.go: src/github.com/ebay/beam/rpc/views.proto src/github.com/ebay/beam/tools/dep/deps.go
-	$(call protoc_go, src/github.com/ebay/beam/rpc, src/github.com/ebay/beam/rpc, views.proto)
+src/github.com/ebay/akutan/rpc/views.pb.go: src/github.com/ebay/akutan/rpc/views.proto src/github.com/ebay/akutan/tools/dep/deps.go
+	$(call protoc_go, src/github.com/ebay/akutan/rpc, src/github.com/ebay/akutan/rpc, views.proto)
 
-src/github.com/ebay/beam/logentry/commands.pb.go: src/github.com/ebay/beam/logentry/commands.proto src/github.com/ebay/beam/tools/dep/deps.go
-	$(call protoc_go, src/github.com/ebay/beam/logentry, src/github.com/ebay/beam/logentry, commands.proto)
+src/github.com/ebay/akutan/logentry/commands.pb.go: src/github.com/ebay/akutan/logentry/commands.proto src/github.com/ebay/akutan/tools/dep/deps.go
+	$(call protoc_go, src/github.com/ebay/akutan/logentry, src/github.com/ebay/akutan/logentry, commands.proto)
 
-src/github.com/ebay/beam/diskview/meta.pb.go: src/github.com/ebay/beam/diskview/meta.proto src/github.com/ebay/beam/tools/dep/deps.go
-	$(call protoc_go, src/github.com/ebay/beam/diskview, src/github.com/ebay/beam/diskview, meta.proto)
+src/github.com/ebay/akutan/diskview/meta.pb.go: src/github.com/ebay/akutan/diskview/meta.proto src/github.com/ebay/akutan/tools/dep/deps.go
+	$(call protoc_go, src/github.com/ebay/akutan/diskview, src/github.com/ebay/akutan/diskview, meta.proto)
 
-src/github.com/ebay/beam/api/beam_api.pb.go: proto/api/beam_api.proto src/github.com/ebay/beam/tools/dep/deps.go
-	$(call protoc_go, src/github.com/ebay/beam/api, proto/api, beam_api.proto)
+src/github.com/ebay/akutan/api/akutan_api.pb.go: proto/api/akutan_api.proto src/github.com/ebay/akutan/tools/dep/deps.go
+	$(call protoc_go, src/github.com/ebay/akutan/api, proto/api, akutan_api.proto)
 
-src/github.com/ebay/beam/logspec/log.pb.go: proto/logspec/log.proto src/github.com/ebay/beam/tools/dep/deps.go
-	$(call protoc_go, src/github.com/ebay/beam/logspec, proto/logspec, log.proto)
+src/github.com/ebay/akutan/logspec/log.pb.go: proto/logspec/log.proto src/github.com/ebay/akutan/tools/dep/deps.go
+	$(call protoc_go, src/github.com/ebay/akutan/logspec, proto/logspec, log.proto)
 
-src/github.com/ebay/beam/tools/grpcbench/bench.pb.go: src/github.com/ebay/beam/tools/grpcbench/bench.proto src/github.com/ebay/beam/tools/dep/deps.go
-	$(call protoc_go, src/github.com/ebay/beam/tools/grpcbench, src/github.com/ebay/beam/tools/grpcbench, bench.proto)
+src/github.com/ebay/akutan/tools/grpcbench/bench.pb.go: src/github.com/ebay/akutan/tools/grpcbench/bench.proto src/github.com/ebay/akutan/tools/dep/deps.go
+	$(call protoc_go, src/github.com/ebay/akutan/tools/grpcbench, src/github.com/ebay/akutan/tools/grpcbench, bench.proto)
 
 generate: protoc
 	PATH=${PATH}:${ROOT}/bin go generate ${PACKAGE}/...
 
-src/github.com/ebay/beam/util/cmp/gen_cmp_test.go: src/github.com/ebay/beam/util/cmp/cmp_test.template Makefile
-	cat src/github.com/ebay/beam/util/cmp/cmp_test.template | bin/genny gen "Scalar=int64,uint64,int32,uint32,int,string" > src/github.com/ebay/beam/util/cmp/gen_cmp_test.go
+src/github.com/ebay/akutan/util/cmp/gen_cmp_test.go: src/github.com/ebay/akutan/util/cmp/cmp_test.template Makefile
+	cat src/github.com/ebay/akutan/util/cmp/cmp_test.template | bin/genny gen "Scalar=int64,uint64,int32,uint32,int,string" > src/github.com/ebay/akutan/util/cmp/gen_cmp_test.go
 
-src/github.com/ebay/beam/util/cmp/gen_cmp.go: src/github.com/ebay/beam/util/cmp/cmp.template Makefile
-	cat src/github.com/ebay/beam/util/cmp/cmp.template | bin/genny gen "Scalar=int64,uint64,int32,uint32,int,string" > src/github.com/ebay/beam/util/cmp/gen_cmp.go
+src/github.com/ebay/akutan/util/cmp/gen_cmp.go: src/github.com/ebay/akutan/util/cmp/cmp.template Makefile
+	cat src/github.com/ebay/akutan/util/cmp/cmp.template | bin/genny gen "Scalar=int64,uint64,int32,uint32,int,string" > src/github.com/ebay/akutan/util/cmp/gen_cmp.go
 
 protoc: \
-	src/github.com/ebay/beam/rpc/views.pb.go \
-	src/github.com/ebay/beam/diskview/meta.pb.go \
-	src/github.com/ebay/beam/api/beam_api.pb.go \
-	src/github.com/ebay/beam/logspec/log.pb.go \
-	src/github.com/ebay/beam/tools/grpcbench/bench.pb.go \
-	src/github.com/ebay/beam/logentry/commands.pb.go
+	src/github.com/ebay/akutan/rpc/views.pb.go \
+	src/github.com/ebay/akutan/diskview/meta.pb.go \
+	src/github.com/ebay/akutan/api/akutan_api.pb.go \
+	src/github.com/ebay/akutan/logspec/log.pb.go \
+	src/github.com/ebay/akutan/tools/grpcbench/bench.pb.go \
+	src/github.com/ebay/akutan/logentry/commands.pb.go
 
-build: generate src/github.com/ebay/beam/util/cmp/gen_cmp.go src/github.com/ebay/beam/util/cmp/gen_cmp_test.go
+build: generate src/github.com/ebay/akutan/util/cmp/gen_cmp.go src/github.com/ebay/akutan/util/cmp/gen_cmp_test.go
 	go install ${PACKAGE}/...
 
 lint:
@@ -120,15 +120,15 @@ bench:
 # Reformats all the Go code. We used to use `go fmt` here, but goimports does
 # all that and a little more.
 fmt:
-	bin/goimports -w src/github.com/ebay/beam
+	bin/goimports -w src/github.com/ebay/akutan
 
 # Verifies that all the Go code is well-formatted, without changing any of it.
 #
 # The ! and grep are to get the right exit status: any output from goimports
 # should fail this target.
 fmtcheck:
-	@echo bin/goimports -d src/github.com/ebay/beam
-	@! bin/goimports -d src/github.com/ebay/beam | grep '.\?'
+	@echo bin/goimports -d src/github.com/ebay/akutan
+	@! bin/goimports -d src/github.com/ebay/akutan | grep '.\?'
 
 .PHONY: local/generated/Procfile
 local/generated/Procfile:
@@ -140,11 +140,11 @@ run: local/generated/Procfile
 # uses dist/ as the docker context
 # $1 = component name (Dockerfile must exist at docker/${1}/Dockerfile)
 define docker_build
-	docker build --tag beam-$(strip $1):latest --file docker/$(strip $1)/Dockerfile dist/
+	docker build --tag akutan-$(strip $1):latest --file docker/$(strip $1)/Dockerfile dist/
 endef
 
-docker-build-beam-builder:
-	docker build --tag=beam-builder:latest docker/build
+docker-build-akutan-builder:
+	docker build --tag=akutan-builder:latest docker/build
 docker-build-api: dist
 	$(call docker_build, api)
 docker-build-diskview: dist
@@ -160,21 +160,21 @@ docker-build-txview: dist
 # the host.
 #
 # The pwd volume enables development of docker images by mounting the host source
-# tree into /home/builder/beam
-docker-run-beam-builder:
+# tree into /home/builder/akutan
+docker-run-akutan-builder:
 	docker run --interactive --tty --rm \
-		--hostname beam-builder \
+		--hostname akutan-builder \
 		--volume /var/run/docker.sock:/var/run/docker.sock \
-		--volume "${PWD}:/home/builder/beam" \
-		beam-builder:latest /bin/bash
+		--volume "${PWD}:/home/builder/akutan" \
+		akutan-builder:latest /bin/bash
 
-# Create the Beam builder docker image with the Docker daemon of Minukube. This
-# builder image will then be used to build the core Beam images.
-docker-build-beam-builder-in-minikube:
+# Create the Akutan builder docker image with the Docker daemon of Minukube. This
+# builder image will then be used to build the core Akutan images.
+docker-build-akutan-builder-in-minikube:
 	eval $$(minikube docker-env || echo "exit 1"); \
-	docker build --tag=beam-builder:latest docker/build
+	docker build --tag=akutan-builder:latest docker/build
 
-# Build the core Beam images using the Beam builder image running within
+# Build the core Akutan images using the Akutan builder image running within
 # Minikube's Docker. These images will then be accessible from Minikube's
 # Kubernetes.
 #
@@ -182,26 +182,26 @@ docker-build-beam-builder-in-minikube:
 # VM into the container. The reason ${PWD} is meaningful is because VirtualBox
 # mounts /Users/ from the Mac host into the VM. Other directories, like
 # /var/run, are local to the VM.
-docker-build-beam-service-in-minikube:
+docker-build-akutan-service-in-minikube:
 	eval $$(minikube docker-env || echo "exit 1"); \
 	docker run --interactive --tty --rm \
-		--hostname beam-builder \
+		--hostname akutan-builder \
 		--volume /var/run/docker.sock:/var/run/docker.sock \
 		--volume /home/docker/.docker:/home/builder/.docker \
-		--volume "${PWD}:/home/builder/beam" \
+		--volume "${PWD}:/home/builder/akutan" \
 		--entrypoint /bin/bash \
-		beam-builder:latest \
-		-c "cd /home/builder/beam && make docker-build-{api,diskview,txview,kafka}"; \
-	docker tag beam-api:latest beam-api:local; \
-	docker tag beam-diskview:latest beam-diskview:local; \
-	docker tag beam-txview:latest beam-txview:local; \
-	docker tag beam-kafka:latest beam-kafka:local
+		akutan-builder:latest \
+		-c "cd /home/builder/akutan && make docker-build-{api,diskview,txview,kafka}"; \
+	docker tag akutan-api:latest akutan-api:local; \
+	docker tag akutan-diskview:latest akutan-diskview:local; \
+	docker tag akutan-txview:latest akutan-txview:local; \
+	docker tag akutan-kafka:latest akutan-kafka:local
 
 dist: build
 	mkdir -p dist/docker
 	cp bin/* dist/
 	cp docker/kafka/{init.sh,*.properties} dist/docker
-	tar --exclude dist/beam.tar.lz4 -c dist/ |lz4 -f - dist/beam.tar.lz4
+	tar --exclude dist/akutan.tar.lz4 -c dist/ |lz4 -f - dist/akutan.tar.lz4
 
 failed:
 	g++ --version

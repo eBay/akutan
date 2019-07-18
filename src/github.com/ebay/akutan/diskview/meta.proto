@@ -1,0 +1,45 @@
+// Copyright 2019 eBay Inc.
+// Primary authors: Simon Fell, Diego Ongaro,
+//                  Raymond Kroeker, and Sathish Kandasamy.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+package diskview;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/ebay/akutan/rpc/views.proto";
+
+message MetaValue {
+	// obsolete: int64 replayIndex = 1;
+	// obsolete: GraphMeta counts = 2; 
+	// counts was changed to 3 when we changed the GraphMeta message; which probably wasn't the right way to do it.
+	// obsolete: GraphMeta counts = 3;
+	reserved 1,2,3;
+
+	// upon resuming processing of the log, this is the first position that should be read from the log
+	rpc.LogPosition restartPosition = 4;
+}
+
+message StatsValue {
+	// contains counts of various s,p,o combinations.
+	GraphMeta counts = 1 [(gogoproto.nullable)=false];
+}
+
+message GraphMeta  {
+	option (gogoproto.stringer) = false; // custom String() defined since StatsResult is huge
+	int64 factCount    = 1;
+	int64 factVersions = 3;
+	rpc.FactStatsResult stats      = 4 [(gogoproto.nullable)=false];
+	google.protobuf.Timestamp asOf = 5 [(gogoproto.stdtime)=true, (gogoproto.nullable)=false];
+}

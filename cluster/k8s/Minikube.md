@@ -26,7 +26,7 @@ $ brew cask install minikube
 ### Bring Up Kubernetes
 
 Start up the Kubernetes cluster in a virtual machine. The additional memory and
-cores are recommended to run the Beam pods. The additional disk space is
+cores are recommended to run the Akutan pods. The additional disk space is
 recommended to avoid having Kubernetes garbage-collect your Docker images.
 
 ```bash
@@ -47,14 +47,14 @@ Docker daemon so that they don't need to be subsequently pulled into that Docker
 daemon from some local registry. 
 
 The images must be built from a Linux environment (to produce Linux binaries),
-so it's best to build them from within the Beam build image. 
+so it's best to build them from within the Akutan build image.
 
-Go to `~/beam` and run the following:
+Go to the root directory of the repo and run the following:
 
 ```bash
 $ make get # will clone the latest dependency tree
-$ make docker-build-beam-builder-in-minikube
-$ make docker-build-beam-service-in-minikube
+$ make docker-build-akutan-builder-in-minikube
+$ make docker-build-akutan-service-in-minikube
 ```
 
 If this is your first deploy since starting minikube, it might take a while as it
@@ -63,16 +63,16 @@ has to download all the docker images.
 
 ### Create Namespace In Kubernetes Cluster
 
-Run the following to create `beam-dev` namespace, where the Beam services
+Run the following to create `akutan-dev` namespace, where the Akutan services
 will be deployed:
 
 ```bash
-$ kubectl create namespace beam-dev
+$ kubectl create namespace akutan-dev
 ```
 
 ### Create Access Control Rules For Service Discovery
 
-Beam services discover each other by reading the pod list using the Kubernetes
+Akutan services discover each other by reading the pod list using the Kubernetes
 client API. This requires role-based access control settings to allow the pods
 access to this information. Run:
 
@@ -80,23 +80,23 @@ access to this information. Run:
 $ kubectl apply -f cluster/k8s/rbac.yaml
 ```
 
-### Deploy Beam Services
+### Deploy Akutan Services
 
-Beam Services are deployed via `kubectl` into the cluster using YAML
+Akutan Services are deployed via `kubectl` into the cluster using YAML
 configuration files. These are templatized to control which images to run.
 
-Run the following to generate the YAML configuration files and bring up the Beam
+Run the following to generate the YAML configuration files and bring up the Akutan
 services:
 
 ```bash
 $ make get_install build # will rebuild tools needed to build the distribution
-$ bin/gen-kube --beam-images-path='' --beam-images-tag='local' --logservice-image=beam-kafka:local
+$ bin/gen-kube --akutan-images-path='' --akutan-images-tag='local' --logservice-image=akutan-kafka:local
 $ kubectl apply -f cluster/k8s/generated
 ```
 
 If all goes well, you can use `minikube service list` to find the endpoints of the API
 server, or hit the stats url directly, e.g.
-`curl $(minikube service -n beam-dev beam-api-http --url)/stats.txt`
+`curl $(minikube service -n akutan-dev akutan-api-http --url)/stats.txt`
 
 ### Deleting Your Cluster
 
@@ -117,5 +117,5 @@ and is not cleared. So a subsequent `kubectl create <TheSamePersistentVolume>` e
 up with the volume having the contents that it had when it was deleted. Either use
 `minikube delete` as above to start from scratch, or use `minikube ssh` to SSH into
 the minikube VM and manually delete the directories. All the PVs created here are
-stored in /mnt/beam/. If you've deleted all the beam Persistent Volumes, you can do
-`minikube ssh -- sudo rm -rf /mnt/beam` to clean them all up.
+stored in /mnt/akutan/. If you've deleted all the Akutan Persistent Volumes, you can do
+`minikube ssh -- sudo rm -rf /mnt/akutan` to clean them all up.

@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: beam-txview-config
-  namespace: beam-dev
+  name: akutan-txview-config
+  namespace: akutan-dev
 data:
   config.json: |
     {{json "    " $.TxViewCfg }}
@@ -10,25 +10,25 @@ data:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: beam-txview
+  name: akutan-txview
   labels:
-    beam/app: beam-txview
-    beam/type: beam-view
-  namespace: beam-dev
+    akutan/app: akutan-txview
+    akutan/type: akutan-view
+  namespace: akutan-dev
   annotations:
-    beam/features: "Diagnostics"
+    akutan/features: "Diagnostics"
 spec:
   containers:
-  - name: beam-txview
+  - name: akutan-txview
     image: {{$.Images.TxView}}
-    args: [ "-cfg", "/etc/beam/config.json" ]
+    args: [ "-cfg", "/etc/akutan/config.json" ]
     ports:
     - containerPort: 9980
       name: grpc
     volumeMounts:
     - name: config-volume
-      mountPath: /etc/beam
+      mountPath: /etc/akutan
   volumes:
   - name: config-volume
     configMap:
-      name: beam-txview-config
+      name: akutan-txview-config

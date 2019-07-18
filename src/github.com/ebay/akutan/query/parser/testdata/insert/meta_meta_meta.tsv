@@ -1,0 +1,6 @@
+?zero   the:sky  akutan:is       colors:blue
+?one    ?zero    akutan:source   place:san_francisco
+?two    ?one     akutan:source   web:weather_com
+?three  ?two     akutan:channel  comms:web
+        ?three   data:noise    0.65
+        ?three   data:signal   0.8

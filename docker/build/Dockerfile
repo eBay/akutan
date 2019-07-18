@@ -1,5 +1,5 @@
 # Ubuntu 16.04.3 LTS (Xenial Xerus)
-FROM ubuntu:16.04 as beam-builder-apt
+FROM ubuntu:16.04 as akutan-builder-apt
 USER root
 # https://packages.ubuntu.com/xenial/allpackages?format=txt.gz
 RUN apt-get update && apt-get -y install apt-transport-https \
@@ -26,13 +26,13 @@ RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
 RUN add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 RUN apt-get update && apt-get -y install docker-ce
 
-FROM beam-builder-apt as beam-builder
+FROM akutan-builder-apt as akutan-builder
 
-LABEL description="This is a builder image to build beam."
+LABEL description="This is a builder image to build Akutan."
 ENV GOLANGVERSION 1.11.5
 ENV PROTOCVERSION 3.5.1
 ENV ROCKSDBVERSION v5.10.2
 ENV DOCKERAPIVERSION 1.21
-COPY ./docker-beam-builder.sh .
+COPY ./docker-akutan-builder.sh .
 COPY ./rocksdb.sh .
-RUN ./docker-beam-builder.sh
+RUN ./docker-akutan-builder.sh

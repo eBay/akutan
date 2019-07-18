@@ -18,4 +18,4 @@ gen_*.go
 .\#*
 .idea/
 .vscode
-/beam.iml
+/akutan.iml

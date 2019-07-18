@@ -1,41 +1,41 @@
-# Beam Control Plane Requirements
+# Akutan Control Plane Requirements
 
 *This document was written in August-September 2018 to describe the key
-scenarios in operating a production Beam cluster, as well as how those should be
+scenarios in operating a production Akutan cluster, as well as how those should be
 handled. The document aims to be agnostic of how this is implemented. Some
 sections were redacted and edited before making this public.*
 
-## A global Beam database
+## A global Akutan database
 
-This is what we expect a global Beam database to look like:
+This is what we expect a global Akutan database to look like:
 
-![cross-datacenter Beam deployment](ha_dr_beam.png)
+![cross-datacenter Akutan deployment](ha_dr.png)
 
-For the purpose of this document, we define a *Beam Database* as a (potentially)
+For the purpose of this document, we define a *Akutan Database* as a (potentially)
 global deployment, consisting of a (potentially) global log and one or more
-*Beam Clusters*. Each *Beam Cluster* resides in a single datacenter and contains
+*Akutan Clusters*. Each *Akutan Cluster* resides in a single datacenter and contains
 multiple redundant copies of the entire database state. Note that the log is
-defined as being outside the Beam clusters, for the purpose of this document.
+defined as being outside the Akutan clusters, for the purpose of this document.
 
 The log is a single, (potentially) global, distributed, replicated, persistent
 queue. The log determines the ordering for all changes to the database state,
-thereby removing the need for other components in Beam to coordinate. The
+thereby removing the need for other components in Akutan to coordinate. The
 consistency of the entire database rests on that of the log, so the log will
 fundamentally require a distributed consensus protocol at some level. The log is
 not the final resting place for the data, and the log is not expected to scale
 in terms of capacity: the old entries at the start of the log will be truncated
 periodically.
 
-The API servers within a Beam cluster serve clients. They have two roles:
+The API servers within a Akutan cluster serve clients. They have two roles:
 
 1.  They submit changes to the database state as new entries are appended to the
     log.
 
 2.  They collect data from various view servers to answer database queries. This
     part is fairly sophisticated, as described in the
-    [ProtoBeam v3 doc](protobeam_v3.md).
+    [ProtoAkutan v3 doc](protoakutan_v3.md).
 
-The view servers within a Beam cluster each maintain a subset of the database
+The view servers within a Akutan cluster each maintain a subset of the database
 state in some data structure. They update their state deterministically based
 solely on the contents of the log, and they respond to various lookup requests
 from the API servers. The view servers may store their local state on disk or in
@@ -49,11 +49,11 @@ instances, plus the recent entries in the log.
 
 ## Spaces, replication, and partitioning
 
-Each Beam cluster has multiple types of views and many instances of each. The
+Each Akutan cluster has multiple types of views and many instances of each. The
 views logically provide lookups in multiple *spaces*: multiple hash-spaces or
 key-spaces. An instance of a view hosts a single range of a single space.
 
-For example, ProtoBeam v3's Disk Views operate in two modes, forming two
+For example, ProtoAkutan v3's Disk Views operate in two modes, forming two
 different hash-spaces: the HashSP-space and the HashPO-space. The basic unit of
 data in v3 is a id-subject-predicate-object fact. The HashSP space is defined as
 the 64-bit output of a hash of the fact's subject concatenated with its
@@ -62,7 +62,7 @@ and the object. Each DiskView instance is booted as either a HashSP instance
 with a start and an end hash, or as a HashPO instance with a start and an end
 hash.
 
-It is important to note that Beam views are not replicated in the traditional
+It is important to note that Akutan views are not replicated in the traditional
 sense. Once they're booted, each instance applies changes to its state from the
 central log. View instances only communicate with each other in the special case
 of a new instance initializing its state from the Disk Views.
@@ -83,12 +83,12 @@ As shorthand, we might talk about a hash-space partitioned 4 ways and replicated
 Creating logical partitions with logical replica groups would be a simple and
 reasonable way to manage a cluster.
 
-Beam can also operate in the case of uncleanly partitioned spaces. This is
+Akutan can also operate in the case of uncleanly partitioned spaces. This is
 especially useful during cluster transitions. An example of this, with a
 diagram, is given in the RPC Fanout section of the
-[ProtoBeam v3 doc](protobeam_v3.md).
+[ProtoAkutan v3 doc](protoakutan_v3.md).
 
-A Beam cluster is defined as *fully available* (for writes and non-stale reads)
+A Akutan cluster is defined as *fully available* (for writes and non-stale reads)
 if the following conditions are met:
 
 1.  Each of its spaces is fully covered: every *point* (a key or hash)
@@ -99,7 +99,7 @@ if the following conditions are met:
 
 3.  At least one API server is available.
 
-A Beam cluster is defined as *healthy* if the following conditions are met:
+A Akutan cluster is defined as *healthy* if the following conditions are met:
 
 1.  Each of its spaces is fully covered three times: every *point* (a key or
     hash) in every space is served by at least three available and up-to-date
@@ -111,11 +111,11 @@ A Beam cluster is defined as *healthy* if the following conditions are met:
 
 ## Log management
 
-The log presents two unique challenges when it comes to Beam's control
+The log presents two unique challenges when it comes to Akutan's control
 plane:
 
-1.  In a global Beam database, the log is really the only global component. It
-    needs to replicate its state across datacenters, while the other Beam
+1.  In a global Akutan database, the log is really the only global component. It
+    needs to replicate its state across datacenters, while the other Akutan
     components will not communicate across datacenters.
 
 2.  The consistency of the entire database rests on that of the log, so the log
@@ -124,7 +124,7 @@ plane:
     sequences.
 
 Because of (1), how to manage the log itself is a fairly distinct problem from
-how to manage the rest of a Beam database.
+how to manage the rest of a Akutan database.
 
 Managing the log itself will have well-understood scenarios:
 
@@ -137,20 +137,20 @@ Managing the log itself will have well-understood scenarios:
   - Upgrade/rollback: probably has some restrictions on when rollback is
     permitted.
 
-## Beam cluster management
+## Akutan cluster management
 
-This section describes production scenarios for a single Beam cluster (excluding
+This section describes production scenarios for a single Akutan cluster (excluding
 the log) in a single datacenter.
 
-### Provision new clusters for a new Beam database
+### Provision new clusters for a new Akutan database
 
   - Initialize the global log.
-  - Fire up the API and view servers in the new Beam clusters. The servers can
+  - Fire up the API and view servers in the new Akutan clusters. The servers can
     be booted in any order, but they will not be useful until the log is ready.
 
-### Provision new clusters for an existing Beam database
+### Provision new clusters for an existing Akutan database
 
-  - In this scenario, we assume that the existing Beam database has been running
+  - In this scenario, we assume that the existing Akutan database has been running
     for so long that log entry at index 1 has already been discarded.
   - In this case, the Disk Views in the new cluster would need to initialize
     from the Disk Views in an existing cluster.
@@ -224,16 +224,16 @@ the log) in a single datacenter.
   - Another question is whether to make merge/split decisions at the level of
     single view instances, or to merge/split at the level of partitions, where
     multiple instances are logical replicas of the same key/hash-range.
-      - While Beam can cope with either one, the logical partitions with
+      - While Akutan can cope with either one, the logical partitions with
         multiple replicas each may be simpler to reason about.
       - Treating each view instance independently may have advantages in case of
         heterogeneous deployments (for example, if some servers had larger disks
         than others).
 
-## Global Beam Deployment Management
+## Global Akutan Deployment Management
 
 This section describes production scenarios where coordination is required
-across Beam clusters in multiple datacenters that share a single log.
+across Akutan clusters in multiple datacenters that share a single log.
 
 ### Truncate log prefix
 
@@ -248,10 +248,10 @@ across Beam clusters in multiple datacenters that share a single log.
     index, would be reasonable.
   - It may be wise to back up the log prefix somewhere before deleting it,
     though that's only useful if it can be restored.
-  - Each Beam cluster should decide independently how much of
+  - Each Akutan cluster should decide independently how much of
     the log can be discarded.
   - Then some global process should globally discard a prefix of the log that
-    every (critical) Beam cluster can tolerate losing.
+    every (critical) Akutan cluster can tolerate losing.
 
 ### Log entry version change
 
@@ -271,7 +271,7 @@ across Beam clusters in multiple datacenters that share a single log.
 
 ## Conclusion
 
-This document outlined a bunch of scenarios that Beam's control plane would need
+This document outlined a bunch of scenarios that Akutan's control plane would need
 to handle for a production deployment. Most of these are relatively
-straightforward thanks to Beam's architecture, and we have identified only two
+straightforward thanks to Akutan's architecture, and we have identified only two
 scenarios that require cross-datacenter coordination.

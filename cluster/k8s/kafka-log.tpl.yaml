@@ -3,9 +3,9 @@ kind: Pod
 metadata:
   name: kafka-log-1
   labels:
-    beam/app: kafka-log-1
-    beam/type: kafka
-  namespace: beam-dev
+    akutan/app: kafka-log-1
+    akutan/type: kafka
+  namespace: akutan-dev
 spec:
   containers:
   - name: kafka-log-1

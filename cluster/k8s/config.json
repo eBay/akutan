@@ -1,10 +1,10 @@
 {
-	"beamlog": {
+	"akutanlog": {
 		"type": "kafka",
 		"locator": {
 			"type": "kube",
 			"portName": "kafka",
-			"labelSelector": "beam/type=kafka"
+			"labelSelector": "akutan/type=kafka"
 		}
 	},
 	"tracing": {
@@ -12,13 +12,13 @@
 		"locator": {
 			"type": "kube",
 			"portName": "thriftcollector",
-			"labelSelector": "beam/app=jaeger"
+			"labelSelector": "akutan/app=jaeger"
 		}
 	},
 	"viewsLocator": {
 		"type": "kube",
 		"portName": "grpc",
-		"labelSelector": "beam/type=beam-view"
+		"labelSelector": "akutan/type=akutan-view"
 	},
 	"api": {
 		"grpcAddress": ":9987",
