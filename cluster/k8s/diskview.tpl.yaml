@@ -6,7 +6,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{$dv.Name}}-config
-  namespace: beam-dev
+  namespace: akutan-dev
 data:
   config.json: |
     {{json "    " $dv.Cfg }}
@@ -16,18 +16,18 @@ kind: Pod
 metadata:
   name: {{$dv.Name}}
   labels:
-    beam/app: {{$dv.Name}}
-    beam/type: beam-view
-  namespace: beam-dev
+    akutan/app: {{$dv.Name}}
+    akutan/type: akutan-view
+  namespace: akutan-dev
   annotations:
-    beam/space: "{{$dv.Cfg.DiskView.Space}}"
-    beam/firstHash: "{{$dv.Cfg.DiskView.FirstHash}}"
-    beam/lastHash: "{{$dv.Cfg.DiskView.LastHash}}"
+    akutan/space: "{{$dv.Cfg.DiskView.Space}}"
+    akutan/firstHash: "{{$dv.Cfg.DiskView.FirstHash}}"
+    akutan/lastHash: "{{$dv.Cfg.DiskView.LastHash}}"
 spec:
   containers:
-  - name: beam-diskview
+  - name: akutan-diskview
     image: {{$.Images.DiskView}}
-    args: [ "-cfg", "/etc/beam/config.json" ]
+    args: [ "-cfg", "/etc/akutan/config.json" ]
     ports:
     - containerPort: 9980
       name: grpc
@@ -35,7 +35,7 @@ spec:
     - name: data-volume
       mountPath: /db
     - name: config-volume
-      mountPath: /etc/beam
+      mountPath: /etc/akutan
   volumes:
   - name: data-volume
 {{- if $.UsePersistentVolumes }}

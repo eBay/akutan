@@ -1,14 +1,14 @@
 # Query Language
 
-*This document was written in March 2019 to describe Beam's current query
+*This document was written in March 2019 to describe Akutan's current query
 language.*
 
 ## Introduction
 
-A Beam cluster contains a graph of facts, which you can query using Beam's query
+A Akutan cluster contains a graph of facts, which you can query using Akutan's query
 language. Queries are based on fact patterns. They ask: do any facts in the
 graph satisfy this pattern? The facts in the graph may be static (concrete)
-facts physically stored in Beam, or they may be dynamic (inferred) facts that
+facts physically stored in Akutan, or they may be dynamic (inferred) facts that
 are generated during query execution.
 
 The query language started as a home grown format, but more recently it has been
@@ -26,11 +26,11 @@ subject and predicate fields must be an *entity*, while the object field may be
 either an entity or a *literal value*. Entities in the graph are represented in
 the query language by surrounding them in angle brackets (like `<USA>`), by
 using a QName (like `rdf:type`), or by using their internal ID (like `#1052`).
-Although entities in Beam are similar to RDF, they are not the same as the RDF
-equivalents; for example, the prefix of a QName in Beam is not bound to a
+Although entities in Akutan are similar to RDF, they are not the same as the RDF
+equivalents; for example, the prefix of a QName in Akutan is not bound to a
 namespace URI.
 
-As mentioned above, object fields may contain literal values. Beam supports a
+As mentioned above, object fields may contain literal values. Akutan supports a
 number of strongly typed literals and includes some support for languages and
 units:
 
@@ -44,18 +44,18 @@ units:
 | Timestamp | a date/time with amount of precision | `'2019'`, `'2019-03-22'`, `'2017-11-30 14:30:00'` |
 
 The fact's ID allows for encoding information about facts using the *metafacts*
-model. This is described more in the [ProtoBeam v3 doc](protobeam_v3.md).
+model. This is described more in the [ProtoAkutan v3 doc](protoakutan_v3.md).
 
 
 ## Basic Query Structure
 
-If you have Beam running, you can try the examples out by first loading the example
-data set with `bin/beam-client insert docs/query/example_data.tsv`
+If you have Akutan running, you can try the examples out by first loading the example
+data set with `bin/akutan-client insert docs/query/example_data.tsv`
 
-Then you can use `beam-client` to run queries, as in the following example:
+Then you can use `akutan-client` to run queries, as in the following example:
 
 ```bash
-$ bin/beam-client query docs/query/fp_01.bql
+$ bin/akutan-client query docs/query/fp_01.bql
 ...
  person        | place       |
  ------------- | ----------- |
@@ -80,7 +80,7 @@ the line.
 Example: Where was the entity with the label "John Scalzi" born?
 
 ```
-# bin/beam-client query docs/query/fp_01.bql
+# bin/akutan-client query docs/query/fp_01.bql
 SELECT * WHERE {
     ?person rdfs:label "John Scalzi"@en
     ?person <born> ?place
@@ -96,7 +96,7 @@ Example: Of the people born somewhere within California, where was each person
 born?
 
 ```
-# bin/beam-client query docs/query/fp_02.bql
+# bin/akutan-client query docs/query/fp_02.bql
 SELECT * WHERE {
     ?person <born> ?place
     ?place <locatedIn> <California>
@@ -111,7 +111,7 @@ SELECT * WHERE {
 Example: Which Samsung TVs have a size of 65 inches?
 
 ```
-# bin/beam-client query docs/query/fp_03.bql
+# bin/akutan-client query docs/query/fp_03.bql
 SELECT * WHERE {
     ?tv rdf:type <TV>
     ?tv <manufacturer> <Samsung>
@@ -134,7 +134,7 @@ comparison. In place of the predicate field, use `<eq>`, `<notEqual>`, `<gt>`,
 Example: Which Samsung TVs have a size greater than 36 inches?
 
 ```
-# bin/beam-client query docs/query/cmp_01.bql
+# bin/akutan-client query docs/query/cmp_01.bql
 SELECT * WHERE {
     ?tv rdf:type <TV>
     ?tv <manufacturer> <Samsung>
@@ -154,7 +154,7 @@ Example: Is the UK in the European Union as of March 22, 2019?
 This query uses metafacts. `ASK` queries are described more later.
 
 ```
-# bin/beam-client query docs/query/cmp_02.bql
+# bin/akutan-client query docs/query/cmp_02.bql
 ASK WHERE {
     ?fact <UK> <memberOf> <EuropeanUnion>
         ?fact <validUntil> ?until
@@ -171,22 +171,22 @@ ASK WHERE {
 
 ## Transitive Predicates
 
-Beam currently assumes that predicates are transitive. For example, if
+Akutan currently assumes that predicates are transitive. For example, if
 `<a> <type> <b>` and `<b> <type> <c>`, then by the transitive nature of
-`<type>`, it's also true that `<a> <type> <c>`. Beam will generate these
+`<type>`, it's also true that `<a> <type> <c>`. Akutan will generate these
 inferred facts at query time.
 
 Of course, there are predicates that are not logically transitive. For example,
 from `<a> <trusts> <b>` and `<b> <trusts> <c>`, one should not infer that
 `<a> <trusts> <c>`. For now, one should be careful when modeling such graphs
-with Beam.
+with Akutan.
 
 
 Example: Of the people born somewhere within the USA, where was each person
 born?
 
 ```
-# bin/beam-client query docs/query/tp_01.bql
+# bin/akutan-client query docs/query/tp_01.bql
 SELECT * WHERE {
     ?person <born> ?place
     ?place <locatedIn> <USA>
@@ -201,7 +201,7 @@ SELECT * WHERE {
 ```
 
 Note that the example data does not include any fact that says
-`<Fairfield> <locatedIn> <USA>`. Beam inferred this fact from:
+`<Fairfield> <locatedIn> <USA>`. Akutan inferred this fact from:
 ```
 <Fairfield>  <locatedIn> <California>
 <California> <locatedIn> <USA>
@@ -215,7 +215,7 @@ Fact patterns can also be used to express a set of possible values. This is done
 Example: Who was born somewhere within Maryland or South Carolina?
 
 ```
-# bin/beam-client query docs/query/set_01.bql
+# bin/akutan-client query docs/query/set_01.bql
 SELECT ?person WHERE {
     ?person <born> ?loc
     ?loc <locatedIn> ?place
@@ -239,7 +239,7 @@ be nil if the fact is not matched.
 Example: Who was born within the USA, and if we know, where are they now?
 
 ```
-# bin/beam-client query docs/query/opt_01.bql
+# bin/akutan-client query docs/query/opt_01.bql
 SELECT ?person ?bornWhere ?livesWhere WHERE {
     ?person <born> ?bornWhere
     ?bornWhere <locatedIn> <USA>
@@ -267,7 +267,7 @@ explicitly indicate the order.
 Example: List Samsung TVs from largest to smallest.
 
 ```
-# bin/beam-client query docs/query/order_01.bql
+# bin/akutan-client query docs/query/order_01.bql
 SELECT ?tv ?size WHERE {
     ?tv rdf:type <TV>
     ?tv <manufacturer> <Samsung>
@@ -293,7 +293,7 @@ paging and are almost always used along with `ORDER BY`.
 Example: Which is the largest Samsung TV?
 
 ```
-# bin/beam-client query docs/query/limit_01.bql
+# bin/akutan-client query docs/query/limit_01.bql
 SELECT ?tv ?size WHERE {
     ?tv rdf:type <TV>
     ?tv <manufacturer> <Samsung>
@@ -311,7 +311,7 @@ LIMIT 1
 Example: Which is the second-largest Samsung TV?
 
 ```
-# bin/beam-client query docs/query/limit_02.bql
+# bin/akutan-client query docs/query/limit_02.bql
 SELECT ?tv ?size WHERE {
     ?tv rdf:type <TV>
     ?tv <manufacturer> <Samsung>
@@ -329,13 +329,13 @@ OFFSET 1
 
 ## Aggregate functions
 
-Beam currently supports one aggregate function, `COUNT`, which returns the
+Akutan currently supports one aggregate function, `COUNT`, which returns the
 number of results.
 
 Example: How many people were born somewhere in the USA?
 
 ```
-# bin/beam-client query docs/query/count_01.bql
+# bin/akutan-client query docs/query/count_01.bql
 SELECT (COUNT(?person) as ?num) WHERE {
     ?person <born> ?place
     ?place <locatedIn> <USA>
@@ -354,7 +354,7 @@ Select can also return only distinct results, via `SELECT DISTINCT`.
 Example: For each TV, who makes it? (without distinct)
 
 ```
-# bin/beam-client query docs/query/d_01.bql
+# bin/akutan-client query docs/query/d_01.bql
 SELECT ?manf WHERE {
     ?p rdf:type <TV>
     ?p <manufacturer> ?manf
@@ -369,7 +369,7 @@ SELECT ?manf WHERE {
 Example: What are the companies that manufacture TVs?
 
 ```
-# bin/beam-client query docs/query/d_02.bql
+# bin/akutan-client query docs/query/d_02.bql
 SELECT DISTINCT ?manf WHERE {
     ?p rdf:type <TV>
     ?p <manufacturer> ?manf
@@ -389,7 +389,7 @@ or false depending on if the `WHERE` clause found any results.
 Example: Was anyone born in Maryland?
 
 ```
-# bin/beam-client query docs/query/ask_01.bql
+# bin/akutan-client query docs/query/ask_01.bql
 ASK WHERE {
     ?person <born> ?place
     ?place <locatedIn> <Maryland>
@@ -405,9 +405,9 @@ ASK WHERE {
 
 To programmatically run your query, you submit the query string to the `query`
 RPC in the API servers' gRPC service. For more details, see the
-`protos/api/beam_api.proto` file. The response from query is a stream of 1 or
-more chunks of results. The `beam-client query` operation used in the examples
+`protos/api/akutan_api.proto` file. The response from query is a stream of 1 or
+more chunks of results. The `akutan-client query` operation used in the examples
 is a command line tool that wraps this gRPC API.
 
 For details of how the query engine executes the queries, see the
-[ProtoBeam v3](protobeam_v3.md) doc.
+[ProtoAkutan v3](protoakutan_v3.md) doc.

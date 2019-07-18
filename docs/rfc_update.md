@@ -6,29 +6,29 @@ have been implemented as of March 2019. Some sections were redacted and edited
 before making this public.*
 
 ## Summary
-This RFC proposes a new path for inserting and deleting facts in Beam. With this
+This RFC proposes a new path for inserting and deleting facts in Akutan. With this
 proposal, users will have a convenient way to manage the graph and maintain its
-consistency, by leveraging Beam's underlying support for transactions. This RFC
-would bring Beam close to implementing a subset of the
+consistency, by leveraging Akutan's underlying support for transactions. This RFC
+would bring Akutan close to implementing a subset of the
 [Sparql 1.1 Update specification](https://www.w3.org/TR/sparql11-update/).
 
 ## Motivation
 
-The previous insert capability was developed for ProtoBeam and has
+The previous insert capability was developed for ProtoAkutan and has
 several limitations:
 
   - It does not handle automatic assignment of External IDs. Instead
-    of writing `beam:banana beam:color beam:yellow`, users must write:
+    of writing `akutan:banana akutan:color akutan:yellow`, users must write:
 
         New Subject Vars: [?banana, ?color, ?yellow]
         Facts: [
-        [s:?banana, p:<HasExternalID>, o:"beam:banana"],
-        [s:?color,  p:<HasExternalID>, o:"beam:color"],
-        [s:?yellow, p:<HasExternalID>, o:"beam:yellow"],
+        [s:?banana, p:<HasExternalID>, o:"akutan:banana"],
+        [s:?color,  p:<HasExternalID>, o:"akutan:color"],
+        [s:?yellow, p:<HasExternalID>, o:"akutan:yellow"],
         [s:?banana, p:?color, o:?yellow]]
 
   - It does not enforce uniqueness of external IDs. Users can accidentally
-    create multiple entities with the external ID `beam:banana` or `<banana>`.
+    create multiple entities with the external ID `akutan:banana` or `<banana>`.
   - The client must know if it's creating a new entity or referencing an
     existing entity. This leads to time-of-check time-of-use races with
     concurrent clients.
@@ -59,7 +59,7 @@ mechanism, with the following goals:
 
 ## Guide-level explanation
 
-This RFC adds three new top-level Beam API methods:
+This RFC adds three new top-level Akutan API methods:
 
 1. **Insert:** to ensure facts exist,
 2. **Delete:** to ensure facts do not exist,
@@ -110,8 +110,8 @@ allow more flexible whitespace than just tabs.
 
 It will accept triples like this:
 
-    beam:banana   beam:color beam:yellow
-    beam:eggplant beam:color beam:purple
+    akutan:banana   akutan:color akutan:yellow
+    akutan:eggplant akutan:color akutan:purple
 
 where the details of different literal types, units, and languages are outside
 the scope of this RFC.
@@ -123,16 +123,16 @@ these be inserted or deleted) and will result in a parse error.
 
 #### Internal and External IDs
 
-Entities in Beam's underlying fact storage are represented as 64-bit integer IDs
+Entities in Akutan's underlying fact storage are represented as 64-bit integer IDs
 called KIDs. These will be mapped automatically when the first insert RPC first
-mentions them. For example, inserting the fact `beam:banana beam:color beam:yellow`
-will map `beam:banana` to a new KID if the mapping for `beam:banana` does not
-already exist, and the same for `beam:color` and `beam:yellow`.
+mentions them. For example, inserting the fact `akutan:banana akutan:color akutan:yellow`
+will map `akutan:banana` to a new KID if the mapping for `akutan:banana` does not
+already exist, and the same for `akutan:color` and `akutan:yellow`.
 
-The KIDs are still visible to end users in Beam. This RFC proposes that they may
+The KIDs are still visible to end users in Akutan. This RFC proposes that they may
 be used inserted and deleted with `tsv`-format updates like so:
 
-    #50 beam:color #52
+    #50 akutan:color #52
 
 Users will also continue to be able to insert mappings manually, like so:
 
@@ -171,19 +171,19 @@ position.
 
 This allows inserting metafacts:
 
-    ?f beam:banana  beam:color   beam:yellow
-       ?f           beam:source  beam:duh
-       beam:bob     beam:likes   ?f
+    ?f akutan:banana  akutan:color   akutan:yellow
+       ?f           akutan:source  akutan:duh
+       akutan:bob     akutan:likes   ?f
 
-If an `beam:banana beam:color beam:yellow` fact already exists, this will
+If an `akutan:banana akutan:color akutan:yellow` fact already exists, this will
 ensure the metafacts exist about that existing base fact. If the
-`beam:banana beam:color beam:yellow` fact does not already exist, this will
+`akutan:banana akutan:color akutan:yellow` fact does not already exist, this will
 insert both the new base fact and the metafacts.
 
 The same may be used to delete metafacts together with the base fact they
 belong to. However, this has two limitations:
 
-  - If a user deletes a base fact and only some of its metafacts, Beam will
+  - If a user deletes a base fact and only some of its metafacts, Akutan will
     allow its other metafacts to be orphaned. These orphaned metafacts can still
     be deleted later using the KID form of the fact ID.
   - The `tsv` format can not express a request to delete a metafact without also
@@ -211,9 +211,9 @@ Blank nodes could pose a problem when used as fact IDs. For example, consider
 the following insert request:
 
 ```
-    beam:banana beam:color beam:yellow
-_:f beam:banana beam:color beam:yellow
-_:g beam:banana beam:color beam:yellow
+    akutan:banana akutan:color akutan:yellow
+_:f akutan:banana akutan:color akutan:yellow
+_:g akutan:banana akutan:color akutan:yellow
 ```
 
 How many new facts should be inserted? As a consequence of this scenario, this
@@ -232,8 +232,8 @@ semicolons into a larger request, which logically executes in the order given.
 Example 4 from Sparql 1.1 Update (§3.1.2) shows how to use a `DELETE DATA`
 operation and an `INSERT DATA` operation in a single request:
 
-    DELETE DATA { beam:book123 dc:title "Compiler Desing" } ;
-    INSERT DATA { beam:book123 dc:title "Compiler Design" }
+    DELETE DATA { akutan:book123 dc:title "Compiler Desing" } ;
+    INSERT DATA { akutan:book123 dc:title "Compiler Design" }
 
 This RFC proposes a restricted from of requests, where the only requests that
 allow multiple operations are of this `DELETE DATA` semicolon `INSERT DATA`
@@ -259,9 +259,9 @@ section). Specifically, this RFC proposes that:
         compound operation, without a semicolon).
 
 Note: This section uses (nearly) standard Sparql syntax. However, the initial
-implementation in Beam will not be standards-compliant, as Beam's current parser
+implementation in Akutan will not be standards-compliant, as Akutan's current parser
 is not yet standards compliant. The initial implementation will contain patterns
-with syntax more like the `tsv` format, analogous to how Beam queries today have
+with syntax more like the `tsv` format, analogous to how Akutan queries today have
 some Sparql syntax and some legacy syntax. Moreover, the Sparql syntax may be
 extended somewhat to support metafacts. For the purpose of this RFC, readers
 should focus on the shape of the requests, not the detailed syntax.
@@ -275,7 +275,7 @@ simple example:
 
     INSERT DATA
     {
-      beam:book123 dc:title   "The Tale of Beam" ;
+      akutan:book123 dc:title   "The Tale of Akutan" ;
                    dc:creator "Bob" .
     }
 
@@ -286,7 +286,7 @@ Here's a simple example:
 
     DELETE DATA
     {
-      beam:book123 dc:title   "The Tale of Beam" ;
+      akutan:book123 dc:title   "The Tale of Akutan" ;
                    dc:creator "Bob" .
     }
 
@@ -308,9 +308,9 @@ WHERE clause is evaluated as if part of the Sparql query `SELECT * WHERE ...`.
 
 The `INSERT template` operation looks like this:
 
-    INSERT { ?fruit beam:color beam:violet .
-             beam:bob beam:dislikes ?fruit }
-    WHERE  { ?fruit beam:color beam:purple }
+    INSERT { ?fruit akutan:color akutan:violet .
+             akutan:bob akutan:dislikes ?fruit }
+    WHERE  { ?fruit akutan:color akutan:purple }
 
 The `DELETE template` operation looks like this:
 
@@ -347,14 +347,14 @@ Variables will have different behavior depending on where they appear:
 Note that the `DELETE template` operation can be used to delete a metafact
 without deleting the base fact:
 
-    DELETE {     ?f           beam:source  beam:duh }
-    WHERE  { ?f  beam:banana  beam:color   beam:yellow }
+    DELETE {     ?f           akutan:source  akutan:duh }
+    WHERE  { ?f  akutan:banana  akutan:color   akutan:yellow }
 
 Blank nodes will have different behavior depending on where they appear:
 
   - Blank nodes in the `WHERE` clause query will be handled the same as in `SELECT`.
     Per the Sparql 1.1 Query specification, they are treated more-or-less as
-    variables. Beam today does not allow blank nodes in queries, and changing
+    variables. Akutan today does not allow blank nodes in queries, and changing
     that behavior is outside the scope of this RFC.
   - Blank nodes will be prohibited in a `DELETE template` operation and in the
     `DELETE` section of a `DELETE template INSERT template` operation.
@@ -365,11 +365,11 @@ Blank nodes will have different behavior depending on where they appear:
     for each solution (row) of the `WHERE` clause.
 
 If nil values occur from optional matches, the insert or delete will continue,
-skipping over affected facts. In the following example, the `beam:email` facts
+skipping over affected facts. In the following example, the `akutan:email` facts
 will remain unset for people that have no values for `foaf:mbox`:
 
-    INSERT { ?person beam:name  ?name .
-             ?person beam:email ?email }
+    INSERT { ?person akutan:name  ?name .
+             ?person akutan:email ?email }
     WHERE  { ?person foaf:name  ?name .
              OPTIONAL { ?person foaf:mbox ?email } }
 
@@ -379,16 +379,16 @@ request with a parse error instead. Here's an example where `?foo` is unbound
 because it does not appear in the `WHERE` clause, and this implies a client
 error:
 
-    INSERT { ?fruit beam:taste ?foo }
-    WHERE  { ?fruit beam:color beam:yellow }
+    INSERT { ?fruit akutan:taste ?foo }
+    WHERE  { ?fruit akutan:color akutan:yellow }
 
 The Sparql 1.1 Update spec suggests that primitive values bound to subject or
 predicate fields be skipped over. This RFC proposes failing the request with a
-schema violation instead. Here's an example, assuming `beam:size` has a
+schema violation instead. Here's an example, assuming `akutan:size` has a
 numeric range:
 
     INSERT { ?size  rdfs:label "but numbers can't have labels" }
-    WHERE  { ?fruit beam:size  ?size }
+    WHERE  { ?fruit akutan:size  ?size }
 
 ### Application-level consistency
 
@@ -398,24 +398,24 @@ to maintain consistency in their data.
 This example (1) shows how to "update" an error in a base fact, but only if that
 fact exists:
 
-    DELETE { beam:simon foaf:givenName 'Simone' }
-    INSERT { beam:simon foaf:givenName 'Simon' }
-    WHERE  { beam:simon foaf:givenName 'Simone' }
+    DELETE { akutan:simon foaf:givenName 'Simone' }
+    INSERT { akutan:simon foaf:givenName 'Simon' }
+    WHERE  { akutan:simon foaf:givenName 'Simone' }
 
 The previous example (1) will orphan any metafacts on the deleted fact. This
 next example (2) would "port" some of them over:
 
-    DELETE { beam:simon foaf:givenName 'Simone' .
+    DELETE { akutan:simon foaf:givenName 'Simone' .
              ?fact ?p ?o }
-    INSERT { beam:simon foaf:givenName 'Simon' .
+    INSERT { akutan:simon foaf:givenName 'Simon' .
              ?fact ?p ?o }
-    WHERE { ?fact beam:simon foaf:givenName 'Simone' .
+    WHERE { ?fact akutan:simon foaf:givenName 'Simone' .
             OPTIONAL { ?fact ?p ?o } }
 
 This example (2) still has two limitations:
 
   - It would not port metafacts over that have the base fact as their object. A
-    pattern for such metafacts could be expressed in a similar way, but Beam
+    pattern for such metafacts could be expressed in a similar way, but Akutan
     does not currently support lookup-by-object queries.
   - It also would not port over any meta-meta-facts. Each level of meta would
     require an additional optional match pattern.
@@ -423,18 +423,18 @@ This example (2) still has two limitations:
 This next example (3) shows how a user could maintain a uniqueness constraint on
 social security numbers:
 
-    INSERT { beam:bob us:ssn "123456789" }
+    INSERT { akutan:bob us:ssn "123456789" }
     WHERE  { ?unused <HasExternalID> "HasExternalID" .
              FILTER NOT EXISTS { ?x us:ssn "123456789" } }
 
 Note that this WHERE clause query yields one result if SSN `123456789` is not
 already in use and no results if SSN `123456789` is already in use. Therefore,
 the example (3) assigns the SSN to Bob only if the SSN is not already assigned.
-However, Beam does not implement any form of negation in queries at this time.
+However, Akutan does not implement any form of negation in queries at this time.
 
 ## Reference-level explanation
 
-This section first describes the changes to various components in Beam,
+This section first describes the changes to various components in Akutan,
 then describes how to break up the changes into workable chunks.
 
 ### Components
@@ -680,7 +680,7 @@ Third, the Sparql 1.1 Update syntax may not be the best one:
   - Some simple invariants, like uniqueness constraints, are awkward to express.
   - Blank nodes may lead to undesirable duplication of facts.
 
-Fourth, this RFC assumes the Beam API server initiates transactions. An
+Fourth, this RFC assumes the Akutan API server initiates transactions. An
 alternative would be to allow clients to do long-running transactions, as in
 SQL. Long-running transactions have the advantage of allowing clients to check
 application-level conditions, but they have the significant disadvantage of
@@ -699,17 +699,17 @@ consider separately.
 An alternative to deleting facts internally would be to use metafacts to write
 deletions as normal facts. For example, one could delete:
 
-    ?f beam:banana beam:color beam:blue
+    ?f akutan:banana akutan:color akutan:blue
 
 by inserting:
 
-       ?f beam:status beam:redacted
+       ?f akutan:status akutan:redacted
 
 This would bring some new challenges:
 
   - Can you undelete a fact by redacting the redacted metafact?
   - Requiring users to check manually for redactions would be inconvenient.
-  - Beam currently does not store metafacts near facts, so automatically
+  - Akutan currently does not store metafacts near facts, so automatically
     checking for redactions would cause substantial overhead for queries.
 
 This RFC proposes three top-level API methods called Insert, Delete, and Update,
@@ -720,7 +720,7 @@ compelling reason to do so.
 
 This RFC allows only `DELETE DATA ; INSERT DATA` compound requests. The
 reason for this is that it would be quite difficult to make arbitrary compound
-requests atomic with Beam's current transaction mechanism. For example, if the
+requests atomic with Akutan's current transaction mechanism. For example, if the
 second operation in a compound request required executing a Sparql query, it
 would need to somehow see the effects of the first operation. Yet, both
 operations must fit into a single log command. As a result, this RFC restricts
@@ -780,23 +780,23 @@ _:alice <car> "MA0123" .
 RDF* allows metafacts as objects, as in the following example:
 
 ```
-beam:bob beam:said <<_:alice <car> "MA0123">> .
+akutan:bob akutan:said <<_:alice <car> "MA0123">> .
 ```
 
-The Dgraph and RDF* syntaxes may be nice to support in Beam. Both can be
+The Dgraph and RDF* syntaxes may be nice to support in Akutan. Both can be
 represented using internal variables in the proposed parser output (AST), so
-permitting either or both formats would be a localized change for Beam's parser
+permitting either or both formats would be a localized change for Akutan's parser
 in the future.
 
 Dgraph's restriction that metafacts can only have facts in the subject position
 may be a useful one. In particular, it would allow efficient queries from a fact
 ID to all of its metafacts, would allow metafacts to be stored with their base
-fact, and would allow Beam to delete metafacts when a base fact is deleted.
+fact, and would allow Akutan to delete metafacts when a base fact is deleted.
 However, this restriction probably limits expressiveness too much. It's also
-difficult to enforce in Beam in isolation, since a user can come along and
+difficult to enforce in Akutan in isolation, since a user can come along and
 insert a metafact as `<s> <p> #235`, where `#235` is a fact ID. Or,
 similarly, a user can assign an external ID to a fact ID,then use that
-external ID later. To enforce Dgraph's restriction, Beam would need either:
+external ID later. To enforce Dgraph's restriction, Akutan would need either:
 
   - To enforce the following restrictions first:
     -  Disallow the use of KIDs, so that all updates use external IDs.
@@ -847,14 +847,14 @@ there more compelling reasons to prefer one over another?
 ## Future possibilities
 
 As mentioned above, supporting additional formats for update requests may be
-useful. Also, Beam should handle QNames, prefixes, IRIs, literals, units, and
+useful. Also, Akutan should handle QNames, prefixes, IRIs, literals, units, and
 languages better and more consistently for both queries and updates.
 
 A Sparql protocol-compatible HTTP API for the update operations, as well as for
 queries, would certainly be useful for interoperability. However, such
 functionality seems out of scope for this RFC.
 
-Beam's current Wipe request is similar or equivalent to Sparql 1.1 Update's
+Akutan's current Wipe request is similar or equivalent to Sparql 1.1 Update's
 `CLEAR DEFAULT` request. We may want to add support for that in the Update API
 in the future, though it is dangerous to have readily available.
 
@@ -864,7 +864,7 @@ This RFC assumes all operations are done against the "unnamed graph" / "default
 graph". Additional "named graphs" are an idea we may want to consider in the
 future.
 
-Someday, Beam should probably purge deleted facts, rather than accumulating
+Someday, Akutan should probably purge deleted facts, rather than accumulating
 them. This should be defined by some policy (like keep monthly snapshots). This
 RFC also proposes a mechanism for automatically mapping external IDs to KIDs
 when the external ID is first used, but there is no automated mechanism to

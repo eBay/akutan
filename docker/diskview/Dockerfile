@@ -6,8 +6,8 @@ RUN apt-get update && apt-get -y install \
     libssl1.0.0 \
     libzstd0 \
     zlib1g
-LABEL description=beam-diskview
-ADD beam-diskview beam-diskview
+LABEL description=akutan-diskview
+ADD akutan-diskview akutan-diskview
 EXPOSE 9980/tcp
-ENTRYPOINT [ "/beam-diskview" ]
+ENTRYPOINT [ "/akutan-diskview" ]
 CMD []

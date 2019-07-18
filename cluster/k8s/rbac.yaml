@@ -1,7 +1,7 @@
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  namespace: beam-dev
+  namespace: akutan-dev
   name: resource-reader
 rules:
   # "" indicates the core API group in which pods resides
@@ -13,11 +13,11 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: resource-reader
-  namespace: beam-dev
+  namespace: akutan-dev
 subjects:
   - kind: ServiceAccount
     name: default
-    namespace: beam-dev  
+    namespace: akutan-dev  
 roleRef:
   kind: Role
   name: resource-reader

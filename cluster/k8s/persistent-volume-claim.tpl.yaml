@@ -6,7 +6,7 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: {{$v.Claim}}
-  namespace: beam-dev
+  namespace: akutan-dev
   annotations:
     volume.beta.kubernetes.io/storage-class: local-ssd
 spec:

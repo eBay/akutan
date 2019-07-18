@@ -1,16 +1,16 @@
-Using Apache Kafka in Beam
+Using Apache Kafka in Akutan
 ==========================
 
 *This doc was written in March 2018 to discuss the use of Apache Kafka as a
-replicated log in the Beam project. Some sections were redacted and edited
+replicated log in the Akutan project. Some sections were redacted and edited
 before making this public.*
 
 Summary
 -------
 
-Beam relies on its log to store its incoming requests in a consistent
+Akutan relies on its log to store its incoming requests in a consistent
 order. We used Apache Kafka as a plausible placeholder for the log in
-ProtoBeam v1. During the ProtoBeam v2 effort, we more carefully
+ProtoAkutan v1. During the ProtoAkutan v2 effort, we more carefully
 evaluated Kafka for this use case.
 
 Although Kafka is commonly used as a message queue, it's implemented
@@ -28,48 +28,48 @@ from Kafka:
 -   **Writing:** Kafka brokers don't implement group commit, so
     Kafka's log append performance will collapse with constant load
     spread across more clients. This would drastically limit our
-    ability to scale out Beam's API tier.
+    ability to scale out Akutan's API tier.
 
-Kafka could still work as Beam's log, but working through the issues
+Kafka could still work as Akutan's log, but working through the issues
 may be more trouble than it's worth. We plan to continue to use Kafka
-during the ProtoBeam v3 effort. In parallel we will investigate our
-options for Beam's log and try to determine the best path forward.
+during the ProtoAkutan v3 effort. In parallel we will investigate our
+options for Akutan's log and try to determine the best path forward.
 
-Beam's requirements for a replicated log
+Akutan's requirements for a replicated log
 -----------------------------------------
 
-Beam relies on its log to store its incoming requests in a consistent
-order. Once the log externalizes a log entry to other views, Beam
+Akutan relies on its log to store its incoming requests in a consistent
+order. Once the log externalizes a log entry to other views, Akutan
 depends on that log entry to be at that position in the log forever
 after; otherwise, the views could diverge and the entire state could
 become corrupt. Therefore, changes to the log need to be synchronously
 persisted (to handle crashes and power outages) and synchronously
 replicated (to handle machine failures).
 
-Beam's log replication may need to span datacenters. We don't yet know
-whether Beam will be deployed within a single datacenter or whether Beam
-will need to span datacenters. If a Beam deployment is to span
+Akutan's log replication may need to span datacenters. We don't yet know
+whether Akutan will be deployed within a single datacenter or whether Akutan
+will need to span datacenters. If a Akutan deployment is to span
 datacenters, we plan to do that by replicating the log across
-datacenters and running independent sets of Beam views in each
+datacenters and running independent sets of Akutan views in each
 datacenter. This focuses the most of the cross-datacenter concerns on
 the replicated log.
 
-Beam's log should be accessible from various programming languages. The
-Beam API tier and all of the views need to be able to access the log.
+Akutan's log should be accessible from various programming languages. The
+Akutan API tier and all of the views need to be able to access the log.
 The API tier needs to append to the log, while most views only need to
 read from the log. We want the flexibility to create views in various
 languages to leverage existing code bases and exploit their relative
-strengths. To do so, we need Beam's log to have support for many
+strengths. To do so, we need Akutan's log to have support for many
 languages, at least for reading.
 
-These are the access patterns we anticipate on Beam's log:
+These are the access patterns we anticipate on Akutan's log:
 
 1.  **Multiple readers tailing the log:** During normal operation in
-    Beam, many views will be reading newly-written entries from the
+    Akutan, many views will be reading newly-written entries from the
     end of the log.
 
 2.  **Multiple writers appending to the log:** During normal operation
-    in Beam, multiple API servers with potentially high levels of
+    in Akutan, multiple API servers with potentially high levels of
     concurrency will be appending requests to the log.
 
 3.  **Long sequential reads:** When a view starts up, it will need to
@@ -78,14 +78,14 @@ These are the access patterns we anticipate on Beam's log:
     indexes in the log and at different speeds.
 
 4.  **Prefix truncation:** Occasionally, the log will become too large
-    to fit comfortably on its disks. Once Beam's persistent DiskViews
-    have processed enough of the log, Beam will request that a prefix
+    to fit comfortably on its disks. Once Akutan's persistent DiskViews
+    have processed enough of the log, Akutan will request that a prefix
     of the log be deleted. This topic of how views boot once the log
-    has been truncated is covered in detail in the [Booting Beam
-    Views](booting_beam_views.md) doc.
+    has been truncated is covered in detail in the [Booting Akutan
+    Views](booting_views.md) doc.
 
-Beam's log will need to handle all of these scenarios, and they may all
-happen concurrently in a Beam deployment.
+Akutan's log will need to handle all of these scenarios, and they may all
+happen concurrently in a Akutan deployment.
 
 Brief introduction to Apache Kafka
 ----------------------------------
@@ -107,32 +107,32 @@ for Go.
 Although Kafka is most often used as a message queue, it's implemented
 much more like a replicated log, and it
 [claims](https://kafka.apache.org/intro#kafka_storage) to
-be suitable for a replicated log use case. For Beam, we are using a
-single Kafka topic with a single Kafka partition as Beam's log. Kafka
+be suitable for a replicated log use case. For Akutan, we are using a
+single Kafka topic with a single Kafka partition as Akutan's log. Kafka
 servers are called brokers, and Kafka uses [Apache
 ZooKeeper](https://en.wikipedia.org/wiki/Apache_ZooKeeper)
 to elect a broker as leader for each partition. All appends to a
 partition are received and ordered by its leader broker, which then
 persists and replicates the new log entry to the follower brokers. For
-Beam, we configure the brokers to acknowledge and externalize a log
+Akutan, we configure the brokers to acknowledge and externalize a log
 append to clients only after the entry has been replicated to a majority
 of the brokers and each of a majority of brokers has written the entry
 safely to its disk. For example, in our test cluster, each entry is
 durably written to 2 of 3 of the disks in the cluster before it's
 acknowledged.
 
-Kafka is particularly attractive for Beam because it's so widely used.
-On paper, it appears to be a good fit for most of Beam's requirements.
-We've used Kafka for ProtoBeam v1 and v2, thereby gaining some hands-on
+Kafka is particularly attractive for Akutan because it's so widely used.
+On paper, it appears to be a good fit for most of Akutan's requirements.
+We've used Kafka for ProtoAkutan v1 and v2, thereby gaining some hands-on
 experience with it, and we've benchmarked Kafka's performance for some
-of the key Beam scenarios described above. The rest of this document
+of the key Akutan scenarios described above. The rest of this document
 describes our benchmark results and discusses various concerns with
-using Kafka in Beam.
+using Kafka in Akutan.
 
 Kafka performance evaluation
 ----------------------------
 
-This section evaluates Apache Kafka's performance as a log for Beam:
+This section evaluates Apache Kafka's performance as a log for Akutan:
 
 -   The "Read performance" subsection focuses on the throughput of log
     reads (this is Scenario 3: "Long sequential reads").
@@ -153,8 +153,8 @@ scenarios we identified above:
 
 We have chosen to focus this evaluation on throughput, rather than
 latency, because we aren't aware of any strict latency requirements for
-Beam. We are concerned about the log's ability to ingest large amounts
-of data, as we expect the log append throughput to determine Beam's
+Akutan. We are concerned about the log's ability to ingest large amounts
+of data, as we expect the log append throughput to determine Akutan's
 overall write throughput.
 
 This section omits many details of our configuration and benchmarks for
@@ -163,7 +163,7 @@ document.
 
 ### Read performance
 
-This section focuses on how fast a Beam view can sequentially read a
+This section focuses on how fast a Akutan view can sequentially read a
 large suffix of the log. Views will read potentially large suffixes of
 the log when they start up, and reading a large part of the log may also
 provide insights into the performance of tailing the log. As a baseline,
@@ -232,8 +232,8 @@ cache. The "Uncached" scenarios read the entire log, which is too
 large to fit in the broker's OS disk cache.
 
 We think the "Remote, Uncached" scenario will be the most
-representative of a Beam view booting. The "Remote, Cached" scenario
-may be more representative of Beam views tailing a growing log.
+representative of a Akutan view booting. The "Remote, Cached" scenario
+may be more representative of Akutan views tailing a growing log.
 
 The table presents the best numbers we can currently measure in each
 language. We've tried many other options and have seen varying results:
@@ -365,12 +365,12 @@ There are a few possible ways to achieve this pipeline:
 In the best case, we've seen Kafka remote read performance in the range
 of 250-350 MiB/sec, while our disks can read at 500-800 MiB/sec. Sadly,
 Kafka's consumer protocol was not designed for high throughput. The
-results aren't so bad that Kafka is entirely unusable for Beam, but it
+results aren't so bad that Kafka is entirely unusable for Akutan, but it
 is a significant concern.
 
 ### Write performance
 
-This section focuses on how fast the log can handle appends coming from Beam's
+This section focuses on how fast the log can handle appends coming from Akutan's
 API tier. We measured the throughput of log appends in Kafka, comparing both a
 single-broker Kafka cluster and a three-broker Kafka cluster.
 
@@ -394,8 +394,8 @@ In this benchmark, we spawned 128 goroutines but split them over varying
 numbers of client connections. On the left side, we have 128 goroutines
 on 1 connection, then 64 goroutines on each of 2 connections, etc, going
 all the way out to 1 goroutine on each of 128 connections. This
-simulates a constant write request rate coming into Beam API servers,
-and what Beam's overall write throughput would look like as we scaled
+simulates a constant write request rate coming into Akutan API servers,
+and what Akutan's overall write throughput would look like as we scaled
 up the number of API servers. The ideal implementation of group commit
 would result in a nearly flat line, where the throughput was not
 dependent on the number of client connections.
@@ -416,8 +416,8 @@ larger Produce requests. On the right-hand side of the curve, the Kafka
 client can't; the broker receives small Produce requests and does
 nothing to collect them together.
 
-This behavior drastically limits the scalability of Beam's API tier.
-Even if we only scale out Beam's API tier to a few servers, we will
+This behavior drastically limits the scalability of Akutan's API tier.
+Even if we only scale out Akutan's API tier to a few servers, we will
 have given up most of Kafka's potential log append throughput.
 
 -   With many connections and a single goroutine each, the single broker
@@ -442,7 +442,7 @@ Fast enough durable disk writes could change Kafka's scalability
 properties. As an experiment, we ran the same benchmark as before but
 with fsync disabled. In this configuration, Kafka acknowledged the
 Produce requests as soon as they reached the OS buffer cache and met
-their replication requirements. This is unsafe for Beam but may give us
+their replication requirements. This is unsafe for Akutan but may give us
 an upper bound in performance.
 
 The following graph shows the throughput like before, offering a
@@ -494,7 +494,7 @@ This will be more complicated in Kafka for the following reasons:
     other engineering challenges.
 
 Another possibility would be to implement group commit in a proxy
-sitting right in front of the leader broker. This could help Beam get
+sitting right in front of the leader broker. This could help Akutan get
 most of the performance of having group commit in Kafka, without having
 to modify Kafka broker code. However, it'd be quite a kludge and would
 leave some performance on the table. It might also interact poorly with
@@ -507,21 +507,21 @@ Kafka's log append throughput collapses when more than a couple of
 clients submit requests. This is because Kafka brokers don't implement
 group commit. The Kafka project does not see durable writes as important
 (they suggest disabling fsync calls), but they are necessary to ensure
-Beam's consistency in the face of correlated log server crashes. If
-Beam is to use Kafka as its log, we will need to address this serious
+Akutan's consistency in the face of correlated log server crashes. If
+Akutan is to use Kafka as its log, we will need to address this serious
 problem.
 
 Additional concerns about Kafka
 -------------------------------
 
 This section discusses additional concerns and considerations about
-using Apache Kafka in Beam. We haven't explored these in as much detail
+using Apache Kafka in Akutan. We haven't explored these in as much detail
 yet, but they are certainly relevant to the discussion of evaluating
-Apache Kafka for Beam's replicated log.
+Apache Kafka for Akutan's replicated log.
 
 ### Duplicate appends (at-most-once semantics)
 
-When a Beam API server sends a request to be appended to the log, we'd
+When a Akutan API server sends a request to be appended to the log, we'd
 like that to end up as a single entry in the log. Sometimes, however,
 the request or the response will be lost (the TCP connection will be
 broken), and the API server won't know what happened. It'll need to
@@ -552,17 +552,17 @@ generally solved like this:
     client, it deletes the session. Subsequent requests with that
     session ID are then rejected.
 
-With respect to Beam's log, there are several ways this could be
+With respect to Akutan's log, there are several ways this could be
 implemented. The duplicate requests could be filtered out on production
 before they are appended to the log, or they could be filtered out on
 consumption as they are read from the log. To filter them out during
 production, we require support from the log implementation; to filter
 them out during consumption, this could be implemented in the log itself
-or as part of every Beam log consumer. Of course, we'd prefer if this
+or as part of every Akutan log consumer. Of course, we'd prefer if this
 complexity was all handled by the log implementation.
 
 Kafka recently added features for "exactly-once" semantics, which we
-believe would solve this problem for Beam. With this enabled, Kafka
+believe would solve this problem for Akutan. With this enabled, Kafka
 brokers will filter out duplicate requests on the production side,
 before they end up in the log. This requires some changes to producer
 clients to send over session and request IDs, too. These features are
@@ -570,7 +570,7 @@ explained in a Kafka [blog post](https://www.confluent.io/blog/exactly-once-sema
 and [design doc](https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit).
 Unfortunately, they have intermingled a design for cross-partition
 transactions there too, along with a discussion about how this extends
-to Kafka streams, neither of which are relevant for Beam at this time.
+to Kafka streams, neither of which are relevant for Akutan at this time.
 
 The implementation of "exactly-once" semantics was added to Kafka
 brokers and the Java client in v0.11, released in June 2017. As of this
@@ -579,22 +579,22 @@ writing, the implementation for the librdkafka client is still
 and the discussion about supporting this in Sarama is
 [ongoing](https://github.com/Shopify/sarama/issues/901).
 
-For Beam, we plan to wait on this issue for now. We think Kafka's new
-features will work for Beam once more client support exists. We prefer
+For Akutan, we plan to wait on this issue for now. We think Kafka's new
+features will work for Akutan once more client support exists. We prefer
 to wait until the client libraries have better support for this, and if
 it becomes blocking for us, we will consider modifying the clients
 ourselves. For now, this hasn't affected our ability to develop
-ProtoBeam.
+ProtoAkutan.
 
 A related discussion is that, at least before the "exactly-once"
 feature set, Kafka did not guarantee FIFO Client Order. FIFO Client
 Order states that if a client submits m1 then m2, m2 won't precede m1
-in the log. We don't plan to make use of FIFO Client Order for Beam, so
+in the log. We don't plan to make use of FIFO Client Order for Akutan, so
 this isn't an issue for us.
 
 ### Reading from follower brokers
 
-When Beam views boot, they may need to read a substantial suffix of the
+When Akutan views boot, they may need to read a substantial suffix of the
 log. It could be useful during this time to offload the leader broker by
 letting follower brokers serve these reads. Then, once the views are
 caught up to the end of the log, they could move over to tailing the log
@@ -604,7 +604,7 @@ Surprisingly, Kafka does not support this. Their
 [stance](http://grokbase.com/t/kafka/users/13bvf0rsk1/consuming-from-a-replica)
 appears to be that topics should have many partitions; load will be
 well-balanced across brokers because each broker will be the leader for
-many partitions. This isn't the case for Beam, however, which uses only
+many partitions. This isn't the case for Akutan, however, which uses only
 one partition to obtain a simple global ordering of requests.
 
 There is a special way that Kafka clients can read from follower
@@ -617,7 +617,7 @@ and
 [Sarama](https://github.com/Shopify/sarama/blob/5e8fd95863bd4a894fcd29225547d56967f189ad/fetch_request.go#L44)
 hardcode the value to -1.
 
-Beam may not need this optimization. If it does turn out to be
+Akutan may not need this optimization. If it does turn out to be
 important, we will probably need to modify Kafka's client libraries.
 
 ### Kafka's wire protocol
@@ -653,7 +653,7 @@ of problems:
     like CRC32C (earlier versions of Kafka used IEEE CRC) and
     "exactly-once" semantics.
 
-For Beam, this protocol decision has significantly harmed our ability to
+For Akutan, this protocol decision has significantly harmed our ability to
 access the latest Kafka features from multiple languages and to debug
 correctness and performance issues.
 
@@ -678,10 +678,10 @@ is a distributed log service used at a handful of companies, including
 Twitter and Salesforce. Like Kafka, it uses ZooKeeper to maintain
 metadata about logs and coordinate changes to the storage servers. While
 not as popular as Kafka, BookKeeper may be more focused on use cases
-like Beam's. One problem, however, is that the client library for
+like Akutan's. One problem, however, is that the client library for
 BookKeeper embeds quite a lot of functionality, and we're not aware of
 support for non-Java languages. We would like to avoid having a proxy
-between Beam views and the log, yet we wouldn't want to restrict Beam
+between Akutan views and the log, yet we wouldn't want to restrict Akutan
 to Java-only views.
 
 [CORFU](https://www.usenix.org/conference/nsdi12/technical-sessions/presentation/balakrishnan)
@@ -701,14 +701,14 @@ operational implications would be.
 We've also considered building our own log using the 
 [Raft algorithm](https://raft.github.io/). 
 In this case, we would likely leverage an existing open source
-Raft implementation. Such a log implementation could meet all of Beam's
-requirements, but it would take our time away from working on Beam
+Raft implementation. Such a log implementation could meet all of Akutan's
+requirements, but it would take our time away from working on Akutan
 itself.
 
 Conclusion
 ----------
 
-Although Kafka was initially attractive for storing Beam's log, our
+Although Kafka was initially attractive for storing Akutan's log, our
 recent experience with Kafka has exposed significant problems with both
 reading and writing:
 
@@ -721,17 +721,17 @@ reading and writing:
 -   **Writing:** Kafka brokers don't implement group commit, so
     Kafka's log append performance will collapse with constant load
     spread across more clients. This would drastically limit our
-    ability to scale out Beam's API tier.
+    ability to scale out Akutan's API tier.
 
 Kafka was designed like a replicated log for a storage system, but it's not
 commonly used that way. We think the issues we're seeing are because the focus
 on Kafka lately has been on broader use cases, which don't seem relevant for
-Beam.
+Akutan.
 
-Kafka could still work as Beam's log, but working through the issues
+Kafka could still work as Akutan's log, but working through the issues
 may be more trouble than it's worth. We plan to continue to use Kafka
-during the ProtoBeam v3 effort. In parallel, we will investigate our
-options for Beam's log and try to determine the best path forward.
+during the ProtoAkutan v3 effort. In parallel, we will investigate our
+options for Akutan's log and try to determine the best path forward.
 
 Appendix: benchmark configuration/script
 ----------------------------------------
@@ -767,7 +767,7 @@ default configuration:
 
 We use a single Kafka topic with a single partition, created as follows:
 
-> \~/kafka/bin/kafka-topics.sh --create --topic beam --if-not-exists
+> \~/kafka/bin/kafka-topics.sh --create --topic akutan --if-not-exists
 > --zookeeper localhost:2181 --partitions 1 --replication-factor 3
 
 For the tests involving single-broker Kafka clusters, the
@@ -787,7 +787,7 @@ For the write benchmarks, the topic was further configured as follows
 This command helps with determining which broker is the current leader
 (all reads and writes go to the leader):
 
-> \~/kafka/bin/kafka-topics.sh --zookeeper localhost:2181 --topic beam
+> \~/kafka/bin/kafka-topics.sh --zookeeper localhost:2181 --topic akutan
 > --describe
 
 ### Kafka read benchmark
@@ -797,9 +797,9 @@ The data we used was a mix of 20M data points packed into
 
 | **Configuration** |**Command** |
 |--- |--- |
-| Java | \~/kafka/bin\$ ./kafka-consumer-perf-test.sh --zookeeper kafka01:2181 --topic beam --threads 1 --messages 8400000 |
-|Rust using [rdkafka](https://github.com/fede1024/rust-rdkafka) [BaseConsumer](https://docs.rs/rdkafka/*/rdkafka/consumer/base_consumer/struct.BaseConsumer.html) |  \~/protobeam/dist/rust-rdkafkasink  --base-consumer --fetch-message-max-bytes=8388608 kafka01:9092 |
-| Go using [Sarama](https://github.com/Shopify/sarama) | \~/protobeam/bin/kafkasink -cfg \~/protobeam/dist/cluster.json |
+| Java | \~/kafka/bin\$ ./kafka-consumer-perf-test.sh --zookeeper kafka01:2181 --topic akutan --threads 1 --messages 8400000 |
+|Rust using [rdkafka](https://github.com/fede1024/rust-rdkafka) [BaseConsumer](https://docs.rs/rdkafka/*/rdkafka/consumer/base_consumer/struct.BaseConsumer.html) |  \~/protoakutan/dist/rust-rdkafkasink  --base-consumer --fetch-message-max-bytes=8388608 kafka01:9092 |
+| Go using [Sarama](https://github.com/Shopify/sarama) | \~/protoakutan/bin/kafkasink -cfg \~/protoakutan/dist/cluster.json |
 
 The "cached" tests read only the first 2 million entries in the log.
 Each cached test was run once to prime the broker's disk cache, then

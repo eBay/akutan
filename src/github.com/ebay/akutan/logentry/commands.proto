@@ -1,0 +1,219 @@
+// Copyright 2019 eBay Inc.
+// Primary authors: Simon Fell, Diego Ongaro,
+//                  Raymond Kroeker, and Sathish Kandasamy.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+package logentry;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+// This file defines all the types that are serialized to the log. Each
+// xxxCommand is a top level Command message that is serialized into a log
+// entry.
+//
+// In commentary, Writer refers to any service that creates & writes log
+// entries. Reader refers to any service that reads and processes log messages.
+//
+// The file src/github.com/ebay/akutan/api/readme.go contains details of how the types
+// in related packages are used, and why they exist.
+
+// About Versioning
+// As command messages are written to the log and processed by potentially many
+// different versions of the software, it's important that they are always
+// processed deterministically. As we're using protobuf we can modify the
+// structs over time by adding new fields or by using protobuf's ability to
+// transform type (e.g. singular to array). However we have to ensure we are
+// processing the types based on the version # from the log, not from the
+// protobuf definition, so that messages are always processed the same way even
+// if running different versions of the software i.e. during a release. 
+//
+// To add a new command you have to add the message definition. The message type
+// MUST be ignored by Readers until a VersionCommand message is processed to
+// enable it. The new version of the software can be deployed across the cluster
+// and then the VersionCommand message written to the log.
+//
+// To alter how an existing command works, you can add additional fields to the
+// type. These new fields MUST be ignored by the Reader until the relevant
+// VersionCommand entry has been processed. Readers can not assume that just
+// because a new field is set, that it should be processed.
+//
+// If a Reader sees a VersionCommand log entry that is for a larger version than
+// it supports, it MUST panic.
+//
+// TODO: It seems like much of this versioning support could be built into a
+// gogo proto extension
+
+// VersionCommand indicates that log messages should be processed as of the
+// indicated version after the log entry this was persisted at. The log version
+// can only move forward. Writers SHOULD only append VersionCommand entries that
+// move the version higher. Readers MUST ignore a VersionCommand entry that
+// tries to move the version to an earlier version.
+//
+// A new log must be interpreted as Version 1 until an explicit VersionCommand
+// is encountered. 
+message VersionCommand {
+	int32 moveToVersion = 1;
+}
+
+// InsertTxCommand contains 1 or more facts to insert. This command starts a
+// transaction for the insert. A subsequent TxDecisionCommand log entry is
+// required to commit or abort the transaction.
+//
+// KID Offsets are used in facts to refer to KIDs that will be created as a
+// result of processing this message. This allows for new facts to refer to
+// other facts in the message. The Writer MUST assign each fact in this batch a
+// unique factIDOffset. Additional offsets can be used to refer to new entities
+// created in this insert. For example, if you want to create a fact and a meta
+// fact, you'd do 
+//		InsertFact{FactIDOffset:0, Subject:<Apple>, Predicate:<Label>, Object:"Apple. Inc." }, 
+//		InsertFact{FactIDOffset:1, Subject:Offset 0, Predicate:<Source>, Object:<Crawl_2018_09_10> }
+//
+// or to create a new entity with multiple facts you'd have
+//      InsertFact{FactIDOffset:0, Subject:Offset 2, Predicate:<CanonicalLabel> Object:"Eve"} 
+//		InsertFact{FactIDOffset:1, Subject:Offset 2, Predicate:<FriendsWith>, Object:"Alice"}
+//
+// Writers may use up to 999 Offsets in a single InsertTxCommand using values 1
+// through 999 inclusive. There's no requirement to sequentially assign offsets;
+// if there are holes in the set of used offsets, that's fine. Writers may use
+// an Offset in one fact that refers to a FactID of a later fact (in the same
+// InsertTxCommand).
+//
+// When a Reader reads a log entry for a InsertTxCommand, the log index should
+// be used to compute the final KIDs from the offsets. The KID function in the
+// logread package should be used for this.
+message InsertTxCommand {
+	repeated InsertFact facts = 1 [(gogoproto.nullable)=false]; 
+}
+
+// InsertFact describes a single fact to be inserted as part of a
+// InsertTxCommand entry.
+message InsertFact {
+	// The resulting Fact will derive a FactID from this offset and the log
+	// index that message was stored at.
+	int32 factIDOffset      = 1;	
+	KIDOrOffset subject     = 2 [(gogoproto.nullable)=false];
+	KIDOrOffset predicate   = 3 [(gogoproto.nullable)=false];
+	// Note that the ability to specify an KID offset in a KGObject is part of
+	// KGObject itself rather than there being a wrapper KGObjectOrOffset type.
+	KGObject object = 4 [(gogoproto.nullable)=false];
+}
+
+// KIDOrOffset allows a field in InsertFact to refer to an existing KID, or to
+// refer to a KID that will be created as part of the insert. See
+// InsertTxCommand for more details.
+message KIDOrOffset {
+	oneof value {
+		// an existing KID (see InsertTxCommand for more details).
+		uint64 kid = 1;	
+		// derive a KID from this offset and the log index that message was
+		// stored at.
+		int32 offset = 2;	
+	}
+}
+
+// KGObject contains a value for the object field of a fact. It may be a
+// reference to another entity (via a_kID or a_kIDOffset), or a typed literal
+// value.
+message KGObject {
+	oneof value {
+		string      a_string  = 3;
+		double      a_float64 = 4;
+		int64       a_int64   = 5;
+		KGTimestamp a_timestamp = 6;
+		bool        a_bool      = 7;
+		uint64      a_kID       = 8;
+		// derive a KID from this offset and the log index that message was
+		// stored at.
+		int32       a_kIDOffset = 9; 
+	}
+	// All literal types, except string and KID, may optionally set a unit.
+	KIDOrOffset unitID = 1 [(gogoproto.nullable)=false];
+	// String types may optionally set a language.
+	KIDOrOffset langID = 2 [(gogoproto.nullable)=false];
+}
+
+// KGTimestamp represents a variable precision timestamp literal value. This
+// consists of a timestamp, along with an indication of the degree of precision.
+// This can be used to describe just a year, all the way down to a date/time
+// with nanosecond precision. This value is in UTC as per the description in the
+// Timestamp type.
+message KGTimestamp {
+	google.protobuf.Timestamp value = 1 [(gogoproto.nullable)=false,(gogoproto.stdtime)=true];
+	TimestampPrecision precision = 2;
+}
+
+// TimestampPrecision describes the degree of precision for a KGTimestamp. Each
+// level includes all the courser-grained precisions as well.
+//
+// Note that these currently match Api.Precision. Care must be taken when
+// changing either this or the api definition.
+enum TimestampPrecision {
+	Precision_Unknown = 0;
+	// the timestamp is just a Year.
+	Year = 1;
+	// the timestamp consists of Year and Month.
+	Month = 2;
+	// the timestamp consists of Year, Month and Day.
+	Day = 3;
+	// the timestamp consists of Year, Month, Day and Hour.
+	Hour = 4;
+	// the timestamp consists of Year, Month, Day, Hour and Minutes.
+	Minute = 5;
+	// the timestamp consists of Year, Month, Day, Hour, Minutes and Seconds.
+	Second = 6;
+	// the timestamp consists of Year, Month, Day, Hour, Minutes, Seconds and Nanoseconds.
+	Nanosecond = 7;
+}
+
+// TxDecisionCommand records the desired outcome for a previously started
+// transaction. See InsertTxCommand for details of what a Writer MUST ensure
+// before writing a commit=true TxDecisionCommand.
+message TxDecisionCommand {
+	// The log index that the transaction was written to. This is
+	// always smaller than the log index this TxDecisionCommand was written at.
+	//
+	// It's possible for multiple TxDecisionCommand entries to end up in the log for
+	// the same 'tx'. Readers MUST ignore all but the first TxDecisionCommand for a
+	// given 'tx'.
+	uint64 tx = 1;
+	// If false, the effects of the transaction are canceled. If true, they are
+	// retroactively applied as of the index given by tx.
+	bool commit = 2;
+}
+
+// WipeCommand deletes all existing data and aborts all pending transactions.
+// Environments other than dev are expected to ignore processing of this
+// command. Read requests for log indexes prior to index of a processed wipe
+// message MUST return an error indicating that a wipe has taken place.
+message WipeCommand {
+}
+
+// SkippedCommand represents a log entry that should be skipped. We don't expect
+// these to be peristed to the log by Akutan, but log reads where the log service
+// marks the entry as skipped are mapped to this type.
+message SkippedCommand {
+}
+
+// PingCommand records are used to measure the log's latency. Everyone but the
+// writer should ignore this command.
+message PingCommand {
+	// An opaque value set by the writer. It enables the writer to identify its own
+	// commands when reading.
+	bytes writer = 1;
+	// A sequence number used by writer to distinguish one of its commands from
+	// another. The values are usually unique within the scope of a writer and
+	// sequential, but they may be repeated or skipped due to transient errors.
+	uint64 seq = 2;
+}

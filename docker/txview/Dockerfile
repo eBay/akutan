@@ -1,6 +1,6 @@
 FROM ubuntu:16.04
-LABEL description=beam-txview
-ADD beam-txview beam-txview
+LABEL description=akutan-txview
+ADD akutan-txview akutan-txview
 EXPOSE 9980/tcp
-ENTRYPOINT [ "/beam-txview" ]
+ENTRYPOINT [ "/akutan-txview" ]
 CMD []

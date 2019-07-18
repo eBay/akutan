@@ -1,0 +1,15 @@
+#1001 #1002 #1003
+akutan:qname1 akutan:qname2 akutan:qname3
+<dont_care> <entity1> <entity2> <entity3>
+?var <a> <b> <c>
+?var #1002 ?var
+akutan:qname1 akutan:qname2 true
+akutan:qname1 akutan:qname2 12
+akutan:qname1 akutan:qname2 12.23
+akutan:qname1 akutan:qname2 "banana"
+akutan:qname1 akutan:qname2 '2017-01-03'
+akutan:qname1 akutan:qname2 true^^<isEmpty>
+akutan:qname1 akutan:qname2 12^^<inch>
+akutan:qname1 akutan:qname2 12.23^^<inch>
+akutan:qname1 akutan:qname2 "banana"@en_US
+akutan:qname1 akutan:qname2 '2017-01-03'^^<dateOfBirth>

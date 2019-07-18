@@ -1,6 +1,0 @@
-?zero   the:sky  beam:is       colors:blue
-?one    ?zero    beam:source   place:san_francisco
-?two    ?one     beam:source   web:weather_com
-?three  ?two     beam:channel  comms:web
-        ?three   data:noise    0.65
-        ?three   data:signal   0.8

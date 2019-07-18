@@ -1,0 +1,302 @@
+// Copyright 2019 eBay Inc.
+// Primary authors: Simon Fell, Diego Ongaro,
+//                  Raymond Kroeker, and Sathish Kandasamy.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+package api;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+service FactStore {
+	// query returns a table of results about the graph. Larger result tables
+	// are returned as multiple chunks.
+	rpc query(QueryRequest) returns (stream QueryResult);
+
+	// insert ensures the given facts exist.
+	rpc insert(InsertRequest) returns (InsertResult);
+
+	// wipe irreversibly deletes the entire dataset.
+	rpc wipe(WipeRequest) returns (WipeResult);
+
+	// These RPCs are deprecated.
+	rpc queryFacts(QueryFactsRequest) returns (stream QueryFactsResult);
+	rpc lookup_sp(LookupSPRequest) returns (LookupSPResult);
+	rpc lookup_po(LookupPORequest) returns (LookupPOResult);
+}
+
+// QueryRequest is used to specify a SELECT/ASK-style query that returns a
+// tabular set of results.
+message QueryRequest {
+	// Which log index to run the query as of.
+	LogIndex index = 1 [(gogoproto.nullable)=false];
+	// The query in the akutanQL format.
+	string   query = 2;
+}
+
+// LogIndex describes a position in the log, and a constraint that is used
+// to pick a log index to perform the request as of.
+message LogIndex {
+	LogIndexConstraint constraint = 1;
+	// index must be populated for LogIndexExact & LogIndexAtLeast.
+	// index must not be populated for LogIndexRecent & LogIndexLatest.
+	uint64 index = 2;
+}
+
+// LogIndexConstraint defines different types of constraints that can be applied
+// when determining a log index to apply to a request.
+enum LogIndexConstraint {
+	// The exact log index specified should be used.
+	LogIndexExact   = 0;
+	// The log index used should a recent index that is >= the log index specified.
+	LogIndexAtLeast = 1;
+	// Use a log index that the service thinks is recent, but perhaps not the most recent.
+	LogIndexRecent  = 2;
+	// Use the log index that is the current tail of the log. This is more
+	// expensive than LogIndexRecent, as it requires a round-trip to the log
+	// service. Depending on the log service implementation, LogIndexLatest may
+	// or may not provide linearizable semantics in edge cases such as server
+	// failures.
+	LogIndexLatest  = 3;
+}
+
+// QueryResult represents a chunk of results from a query. The full set of
+// results for a query consists of 1..N of these chunks. Each QueryResult
+// instance contains data for the full set of columns, but only some rows.
+message QueryResult {
+	// The log index that the query was executed as of.
+	uint64 index = 1;
+	// For queries that specify a LIMIT or OFFSET clause, this field is
+	// populated with the overall resultset size that would have been returned
+	// without the clause.
+	uint64 totalResultSize = 2;
+	// A column of the results
+	message Column {
+		// Name of the column, taken from the variable used in the query.
+		string name = 1;
+		// The values for this column.
+		repeated KGValue cells = 2 [(gogoproto.nullable)=false];
+	}
+	// The columns in this chunk of results. Each column has the same number of
+	// cells.
+	repeated Column columns = 3 [(gogoproto.nullable)=false];
+}
+
+// KGValue represents a single value, it can be one of the literal types or the
+// identifier for a node.
+message KGValue {
+	option (gogoproto.stringer)=false;
+	oneof value {
+		KGID      node    = 1;
+		KGString  string  = 2 [(gogoproto.customname)="Str"];
+		KGFloat64 float64 = 3;
+		KGInt64   int64   = 4;
+		KGBool    bool    = 5;
+		KGTimestamp timestamp = 6;
+	}
+}
+
+// KGID is an identifier for a node in the graph.
+message KGID {
+	// qName is the external / public identifier for this KGID. Its either a
+	// qName like rdf:type or an entity like <ebay>. The later <ebay> style
+	// identifiers are likely to be depreciated in the future in favor of just
+	// using qNames.
+	string qName  = 1;
+	// EXPERIMENTAL: This is the internal id assigned by the service
+	uint64 sysId = 2;
+}
+
+// KGString is a literal string.
+message KGString {
+	string value = 1;
+	// Optional language identifier
+	KGID   lang  = 2;
+}
+
+// KGFloat64 is a literal float64 (aka double) value.
+message KGFloat64 {
+	double value = 1;
+	// Optional unit identifier.
+	KGID   unit  = 2;
+}
+
+// KGInt64 is a literal int64 (a signed 64 bit integer).
+message KGInt64 {
+	int64 value = 1;
+	// Optional unit identifier.
+	KGID  unit  = 2;
+}
+
+// KGBool is a literal boolean.
+message KGBool {
+	bool value = 1;
+	// Optional unit identifier.
+	KGID unit  = 2;
+}
+
+// KGTimestamp is a variable-precision timestamp. It can store increasingly more
+// precise date/times starting with just year, through to a nanosecond-precision
+// date/time value.
+message KGTimestamp {
+	option (gogoproto.stringer)=false;
+	Precision precision = 1;
+	google.protobuf.Timestamp value = 2 [(gogoproto.nullable)=false,(gogoproto.stdtime)=true];
+}
+
+// Precision defines the different levels of precision for a KGTimestamp.
+enum Precision {
+	option (gogoproto.enum_stringer)=false;
+	Precision_Unknown = 0;
+	Year = 1;
+	Month = 2;
+	Day = 3;
+	Hour = 4;
+	Minute = 5;
+	Second = 6;
+	Nanosecond = 7;
+}
+
+// InsertRequest is used to ensure that the given facts exist in the graph.
+message InsertRequest {
+	// Identifies the syntax of the "facts" field. The possible values are not
+	// yet specified precisely. Use "tsv" for now.
+	string format = 1;
+	// A long string describing the facts to insert.
+	string facts = 2;
+}
+
+// InsertResult describes the outcome of an insert RPC.
+message InsertResult {
+	// If InsertStatus_OK, all the facts described in the request were recently
+	// present in the dataset. Otherwise, a non-transient error occurred, and
+	// the client SHOULD NOT retry the same request.
+	InsertStatus status = 1;
+	// If status indicates an error, this is a non-empty string describing the
+	// error.
+	string error = 2;
+	// If status indicates OK, this is a recent log index at which all the facts
+	// described in the request were present in the graph.
+	uint64 index = 3;
+}
+
+// InsertStatus indicates the success or non-transient failure of an Insert RPC.
+enum InsertStatus {
+	// The request was successful.
+	InsertStatus_OK = 0;
+	// The "facts" string failed to parse in the given "format".
+	InsertStatus_ParseError = 1;
+	// The request contained too many facts to be inserted atomically.
+	InsertStatus_AtomicRequestTooBig = 2;
+	// Carrying out the request would violate some invariant on the graph.
+	InsertStatus_SchemaViolation = 3;
+}
+
+// WipeRequest asks to irreversibly delete the entire dataset.
+message WipeRequest {
+	google.protobuf.Duration waitFor = 1 [(gogoproto.nullable)=false,(gogoproto.stdduration)=true];
+}
+
+// WipeResult is the outcome of a wipe RPC.
+message WipeResult {
+	int64 index = 1;
+	int64 atIndex = 2;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Everything below this divider is deprecated
+////////////////////////////////////////////////////////////////////////////////
+
+// QueryFactsRequest is the request for the deprecated queryFacts RPC.
+message QueryFactsRequest {
+	option (gogoproto.stringer)=false;
+	int64 index = 1;
+	string query = 2;
+}
+
+// QueryFactsResult is the reply to the deprecated queryFacts RPC.
+message QueryFactsResult {
+	int64 index = 1;
+	message Result {
+		repeated ResolvedFact facts = 2 [(gogoproto.nullable)=false];
+	}
+	repeated Result results = 3 [(gogoproto.nullable)=false];
+}
+
+message ResolvedFact {
+	option (gogoproto.stringer)=false;
+	int64 index 	 = 1;
+	uint64 id 		 = 2;
+	uint64 subject 	 = 3;
+	uint64 predicate = 4;
+	KGObject object  = 5 [(gogoproto.nullable)=false];
+}
+
+message KGObject {
+	option (gogoproto.stringer)=false;
+	oneof value {
+		string  a_string  = 1;
+		double  a_float64 = 2;
+		int64   a_int64   = 3;
+		KGTimestamp a_timestamp = 4;
+		bool 	a_bool	  = 5;
+		uint64  a_kID	  = 6;
+	}
+	uint64 unitID = 7;	// literals
+	uint64 langID = 8;	// strings
+}
+
+// LookupSPRequest is the request for the deprecated lookup_sp RPC.
+message LookupSPRequest {
+	int64 index = 1;
+	message Item {
+		uint64 subject   = 3;
+		uint64 predicate = 4;
+	}
+	repeated Item lookups = 5 [(gogoproto.nullable)=false];
+}
+
+// LookupSPResult is the reply to the deprecated lookup_sp RPC.
+message LookupSPResult {
+	int64 index = 2;
+	message Item {
+		uint64	id 			= 1;
+		KGObject object = 2 [(gogoproto.nullable)=false];
+	}
+	message Items {
+		repeated Item item = 1 [(gogoproto.nullable)=false]; 
+	}
+	repeated Items results = 1 [(gogoproto.nullable)=false];
+}
+
+// LookupPORequest is the request for the deprecated lookup_po RPC.
+message LookupPORequest {
+	int64 	index 	    = 1;
+	uint64 	predicate   = 2;
+	repeated KGObject object = 3 [(gogoproto.nullable)=false];
+}
+
+// LookupPOResult is the reply to the deprecated lookup_po RPC.
+message LookupPOResult {
+	message Item {
+		uint64	id     = 1;
+		uint64 subject = 2;
+	}
+	message Items {
+		repeated Item item = 1 [(gogoproto.nullable)=false]; 
+	}
+	repeated Items results = 1 [(gogoproto.nullable)=false];
+	int64 index = 2;
+}

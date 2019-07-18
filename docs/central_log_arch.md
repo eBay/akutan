@@ -39,7 +39,7 @@ with the following properties:
   - Modest write rates (10K-100K writes per second), and
   - Supporting hard-to-partition queries (such as SQL, graphs).
 
-We explored this problem through our *Beam* prototypes. We first built an
+We explored this problem through our *Akutan* prototypes. We first built an
 in-memory key-value store from scratch \[11\], then iterated to a disk-based
 property graph \[12\], then to a knowledge graph \[13\].
 
@@ -71,7 +71,7 @@ serve copies of that information \[17\].
 
 In exchange, we've found many features to be drastically easier to implement
 using a central log than with the stamped-out approach (we implemented all of
-these in Beam):
+these in Akutan):
 
   - **Transactions** with a stamped-out approach require complex distributed
     protocols \[18, 19\]. Using a central log, there's no need for coordination
@@ -95,7 +95,7 @@ these in Beam):
     system, doing so requires updating the scope of every transaction.
 
 We believe the central log is well-suited to meeting the requirements stated
-above. Using a cluster of small VMs (40 GB disk, 8 GB RAM, 4 VCPUs), our Beam
+above. Using a cluster of small VMs (40 GB disk, 8 GB RAM, 4 VCPUs), our Akutan
 implementation stored 4 billion items totalling 1.2 TB of data. Using Kafka, the
 data was loaded at an average write rate of 25 MB/sec \[12\].
 
@@ -145,11 +145,11 @@ consistency properties, for clients.
 10. Cockroach Labs. CockroachDB Documentation: Concepts: Architecture Overview.
     <https://www.cockroachlabs.com/docs/stable/architecture/overview.html>
 
-11. [ProtoBeam v1](protobeam_v1.md) (Nov. 2017).
+11. [ProtoAkutan v1](protoakutan_v1.md) (Nov. 2017).
 
-12. [ProtoBeam v2](protobeam_v2.md) (Mar. 2018).
+12. [ProtoAkutan v2](protoakutan_v2.md) (Mar. 2018).
 
-13. [ProtoBeam v3](protobeam_v3.md) (Aug. 2018).
+13. [ProtoAkutan v3](protoakutan_v3.md) (Aug. 2018).
 
 14. Balakrishnan, M; Malkhi, D; Wobber, T; et al. Tango: Distributed Data
     Structures over a Shared Log. *Symposium on Operating Systems Principles*
@@ -162,7 +162,7 @@ consistency properties, for clients.
 
 16. \[redacted\]
 
-17. [Booting Beam Views](booting_beam_views.md) (Mar. 2018).
+17. [Booting Akutan Views](booting_views.md) (Mar. 2018).
 
 18. Lee, C; Park, S J; Kejriwal, A; Matsushita, S; Ousterhout, J.
     Implementing linearizability at large scale and low latency.
